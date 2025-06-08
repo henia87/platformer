@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build -- --configuration production"
+  publish = "dist/YOUR-PROJECT-NAME"
+
+[dev]
+  command = "ng serve"
+  port = 4200
