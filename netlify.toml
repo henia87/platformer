@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build -- --configuration production"
+  publish = "dist/platformer"
+
+[dev]
+  command = "ng serve"
+  port = 4200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
