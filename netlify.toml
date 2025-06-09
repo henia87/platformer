@@ -1,6 +1,6 @@
 [build]
   command = "npm run build -- --configuration production"
-  publish = "dist/platformer"
+  publish = "dist/platformer/browser"
 
 [dev]
   command = "ng serve"
