@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { InputService } from './core/services/input.service';
+import { GameLoopService } from './core/services/game-loop.service';
+import { PhysicsService } from './core/services/physics.service';
 
 @Component({
   selector: 'app-root',
@@ -7,10 +9,43 @@ import { InputService } from './core/services/input.service';
   standalone: false,
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  private inputService = inject(InputService);
+  private gameLoopService = inject(GameLoopService);
+  private physicsService = inject(PhysicsService);
+
   title = 'platformer';
 
-  constructor(input: InputService) {
-    input.inputState.subscribe((state) => console.log('🕹️ Input:', state));
+  player = {
+    position: { x: 0, y: 0 },
+    velocity: { x: 0, y: 0 },
+    acceleration: { x: 0, y: 0 },
+    grounded: false,
+  };
+
+  ngOnInit(): void {
+    this.inputService.inputState.subscribe((state) => {
+      console.log('🕹️ Input:', state);
+
+      // Example: move left/right
+      const speed = 200; // pixels/sec
+
+      this.player.acceleration.x = 0;
+      if (state.left) this.player.acceleration.x = -speed;
+      if (state.right) this.player.acceleration.x = speed;
+
+      // Simple jump logic (one-time impulse)
+      if (state.jump && this.player.grounded) {
+        this.physicsService.applyImpulse(this.player, 0, -500);
+        this.player.grounded = false; // temporarily unset ground
+      }
+    });
+
+    this.gameLoopService.start();
+
+    this.gameLoopService.frame.subscribe((deltaTime) => {
+      this.physicsService.updatePlayer(this.player, deltaTime);
+      console.log('🎸 Position:', this.player.position);
+    });
   }
 }
