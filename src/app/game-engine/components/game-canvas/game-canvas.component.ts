@@ -48,6 +48,11 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
 
   render() {
     this.ctx.clearRect(0, 0, 400, 300);
+
+    // Draw platform
+    this.ctx.fillStyle = 'gray';
+    this.ctx.fillRect(0, 160, 300, 20);
+
     // Draw player sprite if loaded, else fallback to rectangle
     const playerImg = this.assetLoaderService.getImage('player');
     if (playerImg) {
