@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
+import { AABB } from '../models/aabb.model';
 
-export interface AABB {
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-}
 @Injectable({
   providedIn: 'root',
 })
