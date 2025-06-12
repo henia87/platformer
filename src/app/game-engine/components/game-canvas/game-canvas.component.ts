@@ -5,10 +5,12 @@ import {
   OnInit,
   ViewChild,
   inject,
+  Input,
 } from '@angular/core';
 import { GameLoopService } from '../../../core/services/game-loop.service';
 import { Subscription } from 'rxjs';
 import { AssetLoaderService } from '../../../core/services/asset-loader.service';
+import { RendererService } from '../../../core/services/renderer.service';
 
 @Component({
   selector: 'app-game-canvas',
@@ -17,6 +19,17 @@ import { AssetLoaderService } from '../../../core/services/asset-loader.service'
   styleUrl: './game-canvas.component.scss',
 })
 export class GameCanvasComponent implements OnInit, OnDestroy {
+  @Input() player!: {
+    position: { x: number; y: number };
+    velocity: { x: number; y: number };
+    acceleration: { x: number; y: number };
+    grounded: boolean;
+  };
+  @Input() platform!: {
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+  };
+
   @ViewChild('gameCanvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
@@ -25,6 +38,7 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
 
   private gameLoop = inject(GameLoopService);
   private assetLoaderService = inject(AssetLoaderService);
+  private rendererService = inject(RendererService);
 
   ngOnInit(): void {
     const canvas = this.canvasRef.nativeElement;
@@ -47,19 +61,28 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
   }
 
   render() {
-    this.ctx.clearRect(0, 0, 400, 300);
+    // Clear the canvas
+    this.rendererService.clear(this.ctx, 400, 300);
 
     // Draw platform
-    this.ctx.fillStyle = 'gray';
-    this.ctx.fillRect(0, 160, 300, 20);
+    this.rendererService.drawRect(
+      this.ctx,
+      this.platform.position.x,
+      this.platform.position.y,
+      this.platform.size.width,
+      this.platform.size.height,
+      'gray'
+    );
 
-    // Draw player sprite if loaded, else fallback to rectangle
+    // Draw player
     const playerImg = this.assetLoaderService.getImage('player');
-    if (playerImg) {
-      this.ctx.drawImage(playerImg, this.x, 120, 40, 40);
-    } else {
-      this.ctx.fillStyle = 'deepskyblue';
-      this.ctx.fillRect(this.x, 120, 40, 40);
-    }
+    this.rendererService.drawImage(
+      this.ctx,
+      playerImg,
+      this.player.position.x,
+      this.player.position.y,
+      40,
+      60
+    );
   }
 }

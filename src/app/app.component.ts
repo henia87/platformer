@@ -48,22 +48,22 @@ export class AppComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    // this.inputService.inputState.subscribe((state) => {
-    //   console.log('🕹️ Input:', state);
+    this.inputService.inputState.subscribe((state) => {
+      console.log('🕹️ Input:', state);
 
-    //   // Example: move left/right
-    //   const speed = 200; // pixels/sec
+      // Example: move left/right
+      const speed = 300; // pixels/sec
 
-    //   this.player.acceleration.x = 0;
-    //   if (state.left) this.player.acceleration.x = -speed;
-    //   if (state.right) this.player.acceleration.x = speed;
+      this.player.acceleration.x = 0;
+      if (state.left) this.player.acceleration.x = -speed;
+      if (state.right) this.player.acceleration.x = speed;
 
-    //   // Simple jump logic (one-time impulse)
-    //   if (state.jump && this.player.grounded) {
-    //     this.physicsService.applyImpulse(this.player, 0, -500);
-    //     this.player.grounded = false; // temporarily unset ground
-    //   }
-    // });
+      // Simple jump logic (one-time impulse)
+      if (state.jump && this.player.grounded) {
+        this.physicsService.applyImpulse(this.player, 0, -600);
+        this.player.grounded = false;
+      }
+    });
 
     this.gameLoopService.start();
 
@@ -72,7 +72,7 @@ export class AppComponent implements OnInit {
 
       const playerBox = {
         position: this.player.position,
-        size: { width: 40, height: 40 },
+        size: { width: 40, height: 60 },
       };
 
       const platformBox = {

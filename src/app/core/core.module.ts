@@ -5,17 +5,17 @@ import { CollisionService } from './services/collision.service';
 import { GameLoopService } from './services/game-loop.service';
 import { InputService } from './services/input.service';
 import { PhysicsService } from './services/physics.service';
+import { RendererService } from './services/renderer.service';
 @NgModule({
   declarations: [],
-  imports: [
-    CommonModule
-  ],
+  imports: [CommonModule],
   providers: [
     AssetLoaderService,
     CollisionService,
     GameLoopService,
     InputService,
-    PhysicsService
-  ]
+    RendererService,
+    PhysicsService,
+  ],
 })
-export class CoreModule { }
+export class CoreModule {}
