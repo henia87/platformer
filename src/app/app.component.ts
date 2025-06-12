@@ -3,6 +3,7 @@ import { InputService } from './core/services/input.service';
 import { GameLoopService } from './core/services/game-loop.service';
 import { PhysicsService } from './core/services/physics.service';
 import { AssetLoaderService } from './core/services/asset-loader.service';
+import { CollisionService } from './core/services/collision.service';
 
 @Component({
   selector: 'app-root',
@@ -14,7 +15,8 @@ export class AppComponent implements OnInit {
   private inputService = inject(InputService);
   private gameLoopService = inject(GameLoopService);
   private physicsService = inject(PhysicsService);
-  public assetLoaderService = inject(AssetLoaderService);
+  private assetLoaderService = inject(AssetLoaderService);
+  private collisionService = inject(CollisionService);
 
   title = 'platformer';
 
@@ -40,6 +42,11 @@ export class AppComponent implements OnInit {
     }
   }
 
+  platform = {
+    position: { x: 0, y: 160 },
+    size: { width: 300, height: 20 },
+  };
+
   ngOnInit(): void {
     // this.inputService.inputState.subscribe((state) => {
     //   console.log('🕹️ Input:', state);
@@ -58,12 +65,36 @@ export class AppComponent implements OnInit {
     //   }
     // });
 
-    // this.gameLoopService.start();
+    this.gameLoopService.start();
 
-    // this.gameLoopService.frame.subscribe((deltaTime) => {
-    //   this.physicsService.updatePlayer(this.player, deltaTime);
-    //   console.log('🎸 Position:', this.player.position);
-    // });
+    this.gameLoopService.frame.subscribe((deltaTime) => {
+      this.physicsService.updatePlayer(this.player, deltaTime);
+
+      const playerBox = {
+        position: this.player.position,
+        size: { width: 40, height: 40 },
+      };
+
+      const platformBox = {
+        position: this.platform.position,
+        size: this.platform.size,
+      };
+
+      const isColliding = this.collisionService.checkAABBCollision(
+        playerBox,
+        platformBox
+      );
+
+      if (isColliding && this.player.velocity.y >= 0) {
+        this.player.grounded = true;
+        this.player.velocity.y = 0; // reset vertical velocity on collision
+        this.player.position.y = platformBox.position.y - playerBox.size.height;
+      } else {
+        this.player.grounded = false; // reset grounded state if not colliding
+      }
+
+      // console.log('🎸 Position:', this.player.position);
+    });
 
     this.loadAssets();
   }
