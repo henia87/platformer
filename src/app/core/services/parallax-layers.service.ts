@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Y_FROM_BOTTOM_GRASS } from '../game.config';
 
 @Injectable({ providedIn: 'root' })
 export class ParallaxLayersService {
@@ -11,7 +12,7 @@ export class ParallaxLayersService {
       speed: 0.9,
       color: '#294c84',
       height: 80,
-      yFromBottom: -6,
+      yFromBottom: Y_FROM_BOTTOM_GRASS,
     }, // Add yFromBottom to push grass lower
   ];
 

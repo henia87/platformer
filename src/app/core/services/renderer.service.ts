@@ -117,6 +117,10 @@ export class RendererService {
    * @param height - The height of the layer.
    * @param fallbackColor - An optional fallback color if the image is not loaded.
    */
+  private normalizeTilingStart(offsetX: number, scaledWidth: number): number {
+    return -((offsetX % scaledWidth) + scaledWidth) % scaledWidth;
+  }
+
   drawParallaxLayer(
     ctx: CanvasRenderingContext2D,
     img: HTMLImageElement | undefined,
@@ -142,7 +146,7 @@ export class RendererService {
     const scale = height / ih; // Scale the image to fit the specified height
     const scaledWidth = iw * scale;
 
-    const start = -((offsetX % scaledWidth) + scaledWidth) % scaledWidth; // Normalize start into [-scaledWidth, 0)
+    const start = this.normalizeTilingStart(offsetX, scaledWidth);
     for (let x = start; x < canvasWidth; x += scaledWidth) {
       ctx.drawImage(img, 0, 0, iw, ih, x, y, scaledWidth, height);
     }
