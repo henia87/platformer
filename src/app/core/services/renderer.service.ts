@@ -1,9 +1,25 @@
+/**
+ * RendererService is responsible for drawing shapes and images on a canvas.
+ * It provides methods to draw rectangles, images, sprite frames, and clear the canvas.
+ * This service is used in the game engine to render graphics efficiently.
+ * @file RendererService provides methods for rendering graphics on a canvas.
+ */
 import { Injectable } from '@angular/core';
+import { PLAYER_FALLBACK_COLOR } from '../game.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RendererService {
+  /**
+   * Draws a filled rectangle on the canvas.
+   * @param ctx - The canvas rendering context.
+   * @param x - The x position.
+   * @param y - The y position.
+   * @param width - The width of the rectangle.
+   * @param height - The height of the rectangle.
+   * @param color - The fill color.
+   */
   drawRect(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -16,6 +32,15 @@ export class RendererService {
     ctx.fillRect(x, y, width, height);
   }
 
+  /**
+   * Draws an image on the canvas, or a fallback rectangle if the image is not loaded.
+   * @param ctx - The canvas rendering context.
+   * @param image - The image to draw (can be undefined).
+   * @param x - The x position.
+   * @param y - The y position.
+   * @param width - The width to draw.
+   * @param height - The height to draw.
+   */
   drawImage(
     ctx: CanvasRenderingContext2D,
     image: HTMLImageElement | undefined,
@@ -28,11 +53,24 @@ export class RendererService {
       ctx.drawImage(image, x, y, width, height);
     } else {
       // fallback if image is not loaded
-      ctx.fillStyle = 'deepskyblue';
+      ctx.fillStyle = PLAYER_FALLBACK_COLOR;
       ctx.fillRect(x, y, width, height);
     }
   }
 
+  /**
+   * Draws a specific frame from a sprite sheet image onto the canvas.
+   * @param ctx - The canvas rendering context.
+   * @param image - The sprite sheet image.
+   * @param frameX - The x position of the frame in the sprite sheet.
+   * @param frameY - The y position of the frame in the sprite sheet.
+   * @param frameWidth - The width of the frame.
+   * @param frameHeight - The height of the frame.
+   * @param destX - The x position to draw on the canvas.
+   * @param destY - The y position to draw on the canvas.
+   * @param destWidth - The width to draw on the canvas.
+   * @param destHeight - The height to draw on the canvas.
+   */
   drawSpriteFrame(
     ctx: CanvasRenderingContext2D,
     image: HTMLImageElement,
@@ -58,6 +96,12 @@ export class RendererService {
     );
   }
 
+  /**
+   * Clears the entire canvas.
+   * @param ctx - The canvas rendering context.
+   * @param width - The width of the canvas.
+   * @param height - The height of the canvas.
+   */
   clear(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     ctx.clearRect(0, 0, width, height);
   }

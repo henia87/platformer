@@ -1,0 +1,13 @@
+.canvas-wrapper {
+  display: flex;
+  justify-self: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #999090;
+}
+
+canvas {
+  margin: 0 auto;
+  border: 1px solid #333;
+  background: #111;
+}
