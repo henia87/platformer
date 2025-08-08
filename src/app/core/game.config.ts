@@ -16,6 +16,7 @@ export function getCanvasHeight(): number {
 // Update CANVAS_WIDTH and CANVAS_HEIGHT to use the new functions
 export const CANVAS_WIDTH = getCanvasWidth();
 export const CANVAS_HEIGHT = getCanvasHeight();
+export const LEVEL_PADDING = 200; // Padding for platform culling
 
 // Player
 export const PLAYER_WIDTH = 40;
@@ -41,3 +42,10 @@ export const PLATFORM_Y = CANVAS_HEIGHT - 100;
 // Colors
 export const PLATFORM_COLOR = 'gray';
 export const PLAYER_FALLBACK_COLOR = 'deepskyblue';
+
+// Parallax scrolling
+export const WORLD_WIDTH = 6000; // Example default value
+export const Y_FROM_BOTTOM_GRASS = -5; //
+
+// Camera
+export const SMOOTHING_FACTOR = 0.1;
