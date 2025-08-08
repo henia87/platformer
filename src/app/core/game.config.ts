@@ -1,6 +1,21 @@
 // Canvas
-export const CANVAS_WIDTH = Math.min(window.innerWidth, 800);
-export const CANVAS_HEIGHT = Math.min(window.innerHeight, 600);
+export function getCanvasWidth(): number {
+  if (typeof window !== 'undefined' && typeof window.innerWidth === 'number') {
+    return Math.min(window.innerWidth, 800);
+  }
+  return 800;
+}
+
+export function getCanvasHeight(): number {
+  if (typeof window !== 'undefined' && typeof window.innerHeight === 'number') {
+    return Math.min(window.innerHeight, 600);
+  }
+  return 600;
+}
+
+// Update CANVAS_WIDTH and CANVAS_HEIGHT to use the new functions
+export const CANVAS_WIDTH = getCanvasWidth();
+export const CANVAS_HEIGHT = getCanvasHeight();
 
 // Player
 export const PLAYER_WIDTH = 40;

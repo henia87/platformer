@@ -4,6 +4,8 @@ import { GameLoopService } from './core/services/game-loop.service';
 import { PhysicsService } from './core/services/physics.service';
 import { AssetLoaderService } from './core/services/asset-loader.service';
 import { CollisionService } from './core/services/collision.service';
+import { CameraService } from './core/services/camera.service';
+import { ParallaxLayersService } from './core/services/parallax-layers.service';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -28,6 +30,8 @@ export class AppComponent implements OnInit {
   private physicsService = inject(PhysicsService);
   private assetLoaderService = inject(AssetLoaderService);
   private collisionService = inject(CollisionService);
+  private cameraService = inject(CameraService);
+  private parallaxLayersService = inject(ParallaxLayersService);
 
   title = 'platformer';
 
@@ -52,15 +56,36 @@ export class AppComponent implements OnInit {
   canvasWidth = CANVAS_WIDTH;
   canvasHeight = CANVAS_HEIGHT;
 
+  cameraX = 0;
+  layers = this.parallaxLayersService.getLayers();
+
   private async loadAssets() {
     try {
       await this.assetLoaderService.loadImage(
         'player',
         'assets/sprites/player.png'
       );
+      await this.assetLoaderService.loadImage('bg-sky', 'assets/bg/bg-sky.png');
+      await this.assetLoaderService.loadImage(
+        'bg-hills',
+        'assets/bg/bg-hills.png'
+      );
+      await this.assetLoaderService.loadImage(
+        'bg-buildings',
+        'assets/bg/bg-buildings.png'
+      );
+      await this.assetLoaderService.loadImage(
+        'bg-near',
+        'assets/bg/bg-near.png'
+      );
+
       console.log(
-        '🎨 Loaded player image!',
-        this.assetLoaderService.getImage('player')
+        'Assets loaded:',
+        this.assetLoaderService.getImage('player'),
+        this.assetLoaderService.getImage('bg-sky'),
+        this.assetLoaderService.getImage('bg-hills'),
+        this.assetLoaderService.getImage('bg-buildings'),
+        this.assetLoaderService.getImage('bg-near')
       );
     } catch (error) {
       console.error('Asset loading failed:', error);
@@ -159,7 +184,9 @@ export class AppComponent implements OnInit {
         this.player.grounded = true;
       }
 
-      // console.log('🎸 Position:', this.player.position);
+      const playerX = this.player.position.x; // Get the updated player position
+      this.cameraService.update(playerX); // Update camera based on player position
+      this.cameraX = this.cameraService.xPos; // Sync cameraX with CameraService position
     });
 
     this.loadAssets();
