@@ -25,7 +25,6 @@ import {
   CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
-  PLATFORM_COLOR,
 } from '../../../core/game.config';
 
 @Component({
@@ -51,6 +50,14 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     position: { x: number; y: number };
     size: { width: number; height: number };
   };
+  @Input() cameraX = 0;
+  @Input() layers: {
+    key: string;
+    speed: number;
+    color?: string;
+    height: number;
+    yFromBottom?: number; // Optional property for y offset
+  }[] = [];
 
   @ViewChild('gameCanvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -109,26 +116,40 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    * Renders the current game state to the canvas.
    */
   render() {
-    // Clear the canvas
-    this.rendererService.clear(this.ctx, CANVAS_WIDTH, CANVAS_HEIGHT);
+    this.rendererService.clear(this.ctx, this.canvasWidth, this.canvasHeight);
 
-    // Draw platform
+    // BACKGROUND → FOREGROUND
+    for (const layer of this.layers) {
+      const img = this.assetLoaderService.getImage(layer.key);
+      const offsetX = this.cameraX * layer.speed;
+      this.rendererService.drawParallaxLayer(
+        this.ctx,
+        img,
+        this.canvasWidth,
+        this.canvasHeight,
+        offsetX,
+        layer.yFromBottom || 0, // Pass yFromBottom from the layer
+        layer.height,
+        layer.color
+      );
+    }
+
+    // WORLD (example platform and player rendering)
     this.rendererService.drawRect(
       this.ctx,
-      this.platform.position.x,
+      this.platform.position.x - this.cameraX,
       this.platform.position.y,
       this.platform.size.width,
       this.platform.size.height,
-      PLATFORM_COLOR
+      'gray'
     );
 
-    // Draw player
     const playerImg = this.assetLoaderService.getImage('player');
     this.rendererService.drawImage(
       this.ctx,
       playerImg,
-      this.player.position.x,
-      this.player.position.y,
+      this.player.position.x - this.cameraX, // Use dynamic player position
+      this.player.position.y, // Use dynamic player position
       PLAYER_WIDTH,
       PLAYER_HEIGHT
     );

@@ -105,4 +105,46 @@ export class RendererService {
   clear(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     ctx.clearRect(0, 0, width, height);
   }
+
+  /**
+   * Draws a parallax layer, tiling the image horizontally.
+   * @param ctx - The canvas rendering context.
+   * @param img - The image to draw (can be undefined).
+   * @param canvasWidth - The width of the canvas.
+   * @param canvasHeight - The height of the canvas.
+   * @param offsetX - The x offset for the tiling.
+   * @param yFromBottom - The y position from the bottom of the canvas.
+   * @param height - The height of the layer.
+   * @param fallbackColor - An optional fallback color if the image is not loaded.
+   */
+  drawParallaxLayer(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement | undefined,
+    canvasWidth: number,
+    canvasHeight: number,
+    offsetX: number,
+    yFromBottom: number,
+    height: number,
+    fallbackColor?: string
+  ): void {
+    const y = canvasHeight - yFromBottom - height;
+
+    if (!img) {
+      if (fallbackColor) {
+        ctx.fillStyle = fallbackColor;
+        ctx.fillRect(0, y, canvasWidth, height);
+      }
+      return;
+    }
+
+    const iw = img.width;
+    const ih = img.height;
+    const scale = height / ih; // Scale the image to fit the specified height
+    const scaledWidth = iw * scale;
+
+    const start = -((offsetX % scaledWidth) + scaledWidth) % scaledWidth; // Normalize start into [-scaledWidth, 0)
+    for (let x = start; x < canvasWidth; x += scaledWidth) {
+      ctx.drawImage(img, 0, 0, iw, ih, x, y, scaledWidth, height);
+    }
+  }
 }
