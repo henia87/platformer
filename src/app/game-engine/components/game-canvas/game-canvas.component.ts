@@ -1,3 +1,11 @@
+/**
+ * GameCanvasComponent is responsible for rendering the main game canvas.
+ * It draws the player, platforms, and other entities using the RendererService.
+ * The component subscribes to the game loop and updates the canvas every frame.
+ *
+ * @input player - The player object to render (position, velocity, etc.).
+ * @input platform - The platform object to render (position, size).
+ */
 import {
   Component,
   ElementRef,
@@ -6,11 +14,19 @@ import {
   ViewChild,
   inject,
   Input,
+  AfterViewInit,
 } from '@angular/core';
 import { GameLoopService } from '../../../core/services/game-loop.service';
 import { Subscription } from 'rxjs';
 import { AssetLoaderService } from '../../../core/services/asset-loader.service';
 import { RendererService } from '../../../core/services/renderer.service';
+import {
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  PLAYER_WIDTH,
+  PLAYER_HEIGHT,
+  PLATFORM_COLOR,
+} from '../../../core/game.config';
 
 @Component({
   selector: 'app-game-canvas',
@@ -18,13 +34,19 @@ import { RendererService } from '../../../core/services/renderer.service';
   templateUrl: './game-canvas.component.html',
   styleUrl: './game-canvas.component.scss',
 })
-export class GameCanvasComponent implements OnInit, OnDestroy {
+export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
+  /**
+   * The player object to render on the canvas.
+   */
   @Input() player!: {
     position: { x: number; y: number };
     velocity: { x: number; y: number };
     acceleration: { x: number; y: number };
     grounded: boolean;
   };
+  /**
+   * The platform object to render on the canvas.
+   */
   @Input() platform!: {
     position: { x: number; y: number };
     size: { width: number; height: number };
@@ -36,13 +58,29 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
   private frameSub?: Subscription;
   private x = 0;
 
+  canvasWidth = CANVAS_WIDTH;
+  canvasHeight = CANVAS_HEIGHT;
+
   private gameLoop = inject(GameLoopService);
   private assetLoaderService = inject(AssetLoaderService);
   private rendererService = inject(RendererService);
 
-  ngOnInit(): void {
+  /**
+   * Initializes the canvas context after the view has been initialized.
+   * Sets the canvas width and height based on the component's properties.
+   */
+  ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
     this.ctx = canvas.getContext('2d')!;
+  }
+
+  /**
+   * Initializes the game canvas component.
+   * Sets up the canvas size and starts the game loop.
+   */
+  ngOnInit(): void {
     this.gameLoop.start();
     this.frameSub = this.gameLoop.frame.subscribe((dt: number) => {
       this.update(dt);
@@ -50,19 +88,29 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Cleans up the game loop subscription when the component is destroyed.
+   */
   ngOnDestroy(): void {
     this.frameSub?.unsubscribe();
     this.gameLoop.stop();
   }
 
+  /**
+   * Updates the game state for the current frame.
+   * @param dt - Delta time in seconds since the last frame.
+   */
   update(dt: number) {
     this.x += 100 * dt; // Move 100px/sec
     if (this.x > 300) this.x = 0;
   }
 
+  /**
+   * Renders the current game state to the canvas.
+   */
   render() {
     // Clear the canvas
-    this.rendererService.clear(this.ctx, 400, 300);
+    this.rendererService.clear(this.ctx, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Draw platform
     this.rendererService.drawRect(
@@ -71,7 +119,7 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
       this.platform.position.y,
       this.platform.size.width,
       this.platform.size.height,
-      'gray'
+      PLATFORM_COLOR
     );
 
     // Draw player
@@ -81,8 +129,8 @@ export class GameCanvasComponent implements OnInit, OnDestroy {
       playerImg,
       this.player.position.x,
       this.player.position.y,
-      40,
-      60
+      PLAYER_WIDTH,
+      PLAYER_HEIGHT
     );
   }
 }

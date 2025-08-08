@@ -4,6 +4,17 @@ import { GameLoopService } from './core/services/game-loop.service';
 import { PhysicsService } from './core/services/physics.service';
 import { AssetLoaderService } from './core/services/asset-loader.service';
 import { CollisionService } from './core/services/collision.service';
+import {
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  PLAYER_WIDTH,
+  PLAYER_HEIGHT,
+  PLAYER_JUMP,
+  PLATFORM_WIDTH,
+  PLATFORM_HEIGHT,
+  PLATFORM_Y,
+  PLAYER_ACCELERATION,
+} from './core/game.config';
 
 @Component({
   selector: 'app-root',
@@ -26,6 +37,20 @@ export class AppComponent implements OnInit {
     acceleration: { x: 0, y: 0 },
     grounded: false,
   };
+  // --- Coyote Time ---
+  private coyoteTime = 0;
+  private readonly COYOTE_TIME_MAX = 0.12; // seconds
+
+  // --- Jump Buffer ---
+  private jumpBuffer = 0;
+  private readonly JUMP_BUFFER_MAX = 0.12; // seconds
+
+  platform = {
+    position: { x: 100, y: PLATFORM_Y },
+    size: { width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
+  };
+  canvasWidth = CANVAS_WIDTH;
+  canvasHeight = CANVAS_HEIGHT;
 
   private async loadAssets() {
     try {
@@ -42,39 +67,46 @@ export class AppComponent implements OnInit {
     }
   }
 
-  platform = {
-    position: { x: 0, y: 160 },
-    size: { width: 300, height: 20 },
-  };
-
   ngOnInit(): void {
     this.inputService.inputState.subscribe((state) => {
-      console.log('🕹️ Input:', state);
-
-      // Example: move left/right
-      const speed = 300; // pixels/sec
-
       this.player.acceleration.x = 0;
-      if (state.left) this.player.acceleration.x = -speed;
-      if (state.right) this.player.acceleration.x = speed;
 
-      // Simple jump logic (one-time impulse)
-      if (state.jump && this.player.grounded) {
-        this.physicsService.applyImpulse(this.player, 0, -600);
-        this.player.grounded = false;
+      if (state.left) this.player.acceleration.x = -PLAYER_ACCELERATION;
+      if (state.right) this.player.acceleration.x = PLAYER_ACCELERATION;
+
+      if (state.jump) {
+        this.jumpBuffer = this.JUMP_BUFFER_MAX;
       }
     });
 
     this.gameLoopService.start();
 
     this.gameLoopService.frame.subscribe((deltaTime) => {
+      // --- Coyote Time update ---
+      if (this.jumpBuffer > 0) {
+        this.jumpBuffer -= deltaTime;
+      }
+
+      if (this.player.grounded) {
+        this.coyoteTime = this.COYOTE_TIME_MAX;
+      } else if (this.coyoteTime > 0) {
+        this.coyoteTime -= deltaTime;
+      }
+
+      // --- Jump Buffer update and jump logic ---
+      if (this.jumpBuffer > 0 && this.coyoteTime > 0) {
+        this.physicsService.applyImpulse(this.player, 0, PLAYER_JUMP);
+        this.player.grounded = false;
+        this.coyoteTime = 0;
+        this.jumpBuffer = 0;
+      }
+
       this.physicsService.updatePlayer(this.player, deltaTime);
 
       const playerBox = {
         position: this.player.position,
-        size: { width: 40, height: 60 },
+        size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
       };
-
       const platformBox = {
         position: this.platform.position,
         size: this.platform.size,
@@ -85,12 +117,46 @@ export class AppComponent implements OnInit {
         platformBox
       );
 
-      if (isColliding && this.player.velocity.y >= 0) {
-        this.player.grounded = true;
-        this.player.velocity.y = 0; // reset vertical velocity on collision
-        this.player.position.y = platformBox.position.y - playerBox.size.height;
+      if (isColliding) {
+        const playerBottom = this.player.position.y + PLAYER_HEIGHT;
+        const playerTop = this.player.position.y;
+        const platformTop = platformBox.position.y;
+        const platformBottom = platformBox.position.y + platformBox.size.height;
+
+        if (this.player.velocity.y > 0 && playerBottom > platformTop) {
+          // Landing on top of platform
+          this.player.grounded = true;
+          this.player.velocity.y = 0;
+          this.player.position.y = platformTop - PLAYER_HEIGHT;
+        } else if (this.player.velocity.y < 0 && playerTop < platformBottom) {
+          // Hitting from below
+          this.player.velocity.y = 0;
+          this.player.position.y = platformBottom;
+        } else {
+          this.player.grounded = false;
+        }
       } else {
-        this.player.grounded = false; // reset grounded state if not colliding
+        this.player.grounded = false;
+      }
+
+      // Prevent player from leaving the canvas area
+      if (this.player.position.x < 0) {
+        this.player.position.x = 0;
+        this.player.velocity.x = 0;
+      }
+      if (this.player.position.x > CANVAS_WIDTH - PLAYER_WIDTH) {
+        this.player.position.x = CANVAS_WIDTH - PLAYER_WIDTH;
+        this.player.velocity.x = 0;
+      }
+      if (this.player.position.y < 0) {
+        this.player.position.y = 0;
+        this.player.velocity.y = 0;
+      }
+      const maxY = CANVAS_HEIGHT - PLAYER_HEIGHT;
+      if (this.player.position.y > maxY) {
+        this.player.position.y = maxY;
+        this.player.velocity.y = 0;
+        this.player.grounded = true;
       }
 
       // console.log('🎸 Position:', this.player.position);
