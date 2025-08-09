@@ -1,7 +1,8 @@
 /**
  * RendererService is responsible for drawing shapes and images on a canvas.
- * It provides methods to draw rectangles, images, sprite frames, and clear the canvas.
+ * It provides methods to draw rectangles, images, sprite frames, parallax layers, and clear the canvas.
  * This service is used in the game engine to render graphics efficiently.
+ *
  * @file RendererService provides methods for rendering graphics on a canvas.
  */
 import { Injectable } from '@angular/core';

@@ -1,3 +1,9 @@
+/**
+ * PhysicsService handles physics simulation for game objects, including player movement and gravity.
+ * It updates player state based on input and applies forces such as acceleration, drag, and friction.
+ *
+ * @file PhysicsService provides physics simulation for the game engine.
+ */
 import { Injectable } from '@angular/core';
 import { PhysicsObject } from '../models/physics-object.model';
 import {
@@ -12,10 +18,21 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class PhysicsService {
+  /**
+   * Returns the sign of a number (-1, 0, or 1).
+   * @param n - The number to check.
+   * @returns The sign of the number.
+   */
   private sign(n: number) {
     return n < 0 ? -1 : n > 0 ? 1 : 0;
   }
 
+  /**
+   * Updates the player's physics state based on input and elapsed time.
+   * @param player - The player object to update.
+   * @param input - The current input state (left, right, jump).
+   * @param dt - Delta time in seconds since the last update.
+   */
   updatePlayer(
     player: PhysicsObject,
     input: { left: boolean; right: boolean; jump: boolean },
@@ -33,7 +50,7 @@ export class PhysicsService {
     // Horizontal dynamics
     player.velocity.x += (ax + dragForce) * dt;
 
-    // Optional gentle clamp (pre‑integration), not hard snap
+    // Optional gentle clamp (pre-integration), not hard snap
     if (PLAYER_MAX_SPEED_X > 0) {
       const sgn = this.sign(player.velocity.x);
       player.velocity.x =

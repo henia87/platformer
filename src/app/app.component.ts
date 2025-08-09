@@ -137,13 +137,9 @@ export class AppComponent implements OnInit {
       if (state.jump) this.jumpBuffer = this.JUMP_BUFFER_MAX;
     });
 
-    let frameCounter = 0; // DEBUG ONLY
     // Game logic
     this.gameLoopService.update$.subscribe((dtSec) => {
       const deltaTime = dtSec; // already fixed 1/60s
-
-      frameCounter = (frameCounter ?? 0) + 1;
-      if (frameCounter % 60 === 0) console.log('update tick', frameCounter);
 
       // --- Coyote/Jump buffer ---
       if (this.jumpBuffer > 0) this.jumpBuffer -= deltaTime;
