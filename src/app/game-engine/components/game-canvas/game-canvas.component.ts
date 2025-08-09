@@ -27,7 +27,9 @@ import {
   PLAYER_HEIGHT,
   PLATFORM_WIDTH,
   PLATFORM_HEIGHT,
+  PARALLAX_SMOOTH,
 } from '../../../core/game.config';
+import { Vector2 } from '../../../core/utils/vector2';
 
 /**
  * GameCanvasComponent is responsible for rendering the main game canvas.
@@ -115,18 +117,12 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
    * Fixed delta time for physics updates (ms).
    */
-  private readonly FIXED_DT_MS = 1000 / 60; // your Physics dt
+  private readonly FIXED_DT_MS = 1000 / 60;
 
   /**
-   * Linearly interpolates between two values.
-   * @param a - Start value
-   * @param b - End value
-   * @param t - Interpolation factor (0..1)
-   * @returns Interpolated value
+   * Current parallax offset for each layer.
    */
-  private lerp(a: number, b: number, t: number) {
-    return a + (b - a) * t;
-  }
+  private parallaxX: Record<string, number> = {};
 
   /**
    * Clamps a value between 0 and 1.
@@ -138,6 +134,19 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Ensures the parallax cache is initialized for the current camera position.
+   * @param cam - The current camera position
+   */
+  private ensureParallaxCache(cam: number) {
+    if (Object.keys(this.parallaxX).length !== this.layers.length) {
+      this.parallaxX = {};
+      for (const layer of this.layers) {
+        this.parallaxX[layer.key] = cam * layer.speed;
+      }
+    }
+  }
+
+  /**
    * Initializes the canvas context after the view has been initialized.
    * Sets the canvas width and height based on the component's properties.
    */
@@ -146,11 +155,11 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const ctx = canvas.getContext('2d')!;
     this.ctx = ctx;
 
-    // Logical size (what your game uses)
+    // Logical size
     const w = CANVAS_WIDTH;
     const h = CANVAS_HEIGHT;
 
-    // Physical size (match device pixels)
+    // Physical size (matching device pixels)
     const ratio = window.devicePixelRatio || 1;
     canvas.width = Math.floor(w * ratio);
     canvas.height = Math.floor(h * ratio);
@@ -160,7 +169,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     canvas.style.height = `${h}px`;
 
     // Map logical coordinates -> physical pixels
-    // Important: do NOT also call ctx.scale(); setTransform replaces it.
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
@@ -197,49 +205,58 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   render() {
     this.rendererService.clear(this.ctx, this.canvasWidth, this.canvasHeight);
 
-    // compute alpha based on time since last physics tick
+    // Compute alpha based on time since last physics tick
     const now = performance.now();
     const alpha = this.clamp01((now - this.lastUpdateAtMs) / this.FIXED_DT_MS);
 
-    // interpolate world & camera
-    const cam = this.lerp(this.snapshotPrev.cam, this.snapshot.cam, alpha);
-    const playerX = this.lerp(
-      this.snapshotPrev.playerX,
-      this.snapshot.playerX,
+    // Interpolate camera, player and platform
+    const cam = Vector2.lerp(
+      { x: this.snapshotPrev.cam, y: 0 },
+      { x: this.snapshot.cam, y: 0 },
+      alpha
+    ).x;
+
+    const p = Vector2.lerp(
+      { x: this.snapshotPrev.playerX, y: this.snapshotPrev.playerY },
+      { x: this.snapshot.playerX, y: this.snapshot.playerY },
       alpha
     );
-    const playerY = this.lerp(
-      this.snapshotPrev.playerY,
-      this.snapshot.playerY,
+    const playerX = p.x;
+    const playerY = p.y;
+
+    const plat = Vector2.lerp(
+      { x: this.snapshotPrev.platformX, y: this.snapshotPrev.platformY },
+      { x: this.snapshot.platformX, y: this.snapshot.platformY },
       alpha
     );
-    const platformX = this.lerp(
-      this.snapshotPrev.platformX,
-      this.snapshot.platformX,
-      alpha
-    );
-    const platformY = this.lerp(
-      this.snapshotPrev.platformY,
-      this.snapshot.platformY,
-      alpha
-    );
+    const platformX = plat.x;
+    const platformY = plat.y;
 
     // BACKGROUND → FOREGROUND
+    this.ensureParallaxCache(cam);
+
     for (const layer of this.layers) {
       const img = this.assetLoaderService.getImage(layer.key);
+
+      const target = cam * layer.speed;
+
+      const prev = this.parallaxX[layer.key] ?? target;
+      const eased = prev + (target - prev) * PARALLAX_SMOOTH;
+      this.parallaxX[layer.key] = eased;
+
       this.rendererService.drawParallaxLayer(
         this.ctx,
         img,
         this.canvasWidth,
         this.canvasHeight,
-        cam * layer.speed,
-        layer.yFromBottom || 0, // Pass yFromBottom from the layer
+        eased,
+        layer.yFromBottom || 0,
         layer.height,
         layer.color
       );
     }
 
-    // WORLD (platform and player rendering, with cameraY)
+    // WORLD (platform and player rendering)
     this.rendererService.drawRect(
       this.ctx,
       platformX - cam,

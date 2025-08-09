@@ -50,6 +50,7 @@ export const PLAYER_FALLBACK_COLOR = 'deepskyblue';
 // Parallax scrolling
 export const WORLD_WIDTH = 24000; // Increased from 12000 for more expansive world
 export const Y_FROM_BOTTOM_GRASS = -5; // Lowering grass layer to avoid empty space below
+export const PARALLAX_SMOOTH = 0.12; // 0.08..0.18, visual only
 
 // Camera
 export const SMOOTHING_FACTOR = 0.1; // Smoothing factor for camera movement
