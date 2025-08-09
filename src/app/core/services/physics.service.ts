@@ -3,94 +3,63 @@ import { PhysicsObject } from '../models/physics-object.model';
 import {
   GRAVITY,
   TERMINAL_VELOCITY,
-  FRICTION,
-  VELOCITY_THRESHOLD,
-  FRICTION_GRACE_PERIOD,
-  FRICTION_RAMP_DURATION,
-  FRICTION_MIN,
+  FRICTION, // base ground friction 0..1 per second
+  PLAYER_ACCEL_X, // add this to config if not present (e.g., 2200)
+  PLAYER_DRAG_AIR, // 0..1 per second (e.g., 1.5)
+  PLAYER_DRAG_GROUND, // 0..1 per second (e.g., 6)
+  PLAYER_MAX_SPEED_X, // optional, we’ll clamp *softly*
 } from '../game.config';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class PhysicsService {
-  private gravity = GRAVITY;
-  private terminalVelocity = TERMINAL_VELOCITY;
-
-  // Track how long the player has been grounded
-  private groundedTime = 0;
-  private wasGrounded = false;
-
-  updatePlayer(player: PhysicsObject, deltaTime: number): void {
-    player.acceleration.y = player.grounded ? 0 : this.gravity;
-
-    // Integrate acceleration into velocity
-    player.velocity.x += player.acceleration.x * deltaTime;
-    player.velocity.y += player.acceleration.y * deltaTime;
-
-    this.applyFriction(player, deltaTime);
-
-    // Clamp vertical velocity
-    if (player.velocity.y > this.terminalVelocity) {
-      player.velocity.y = this.terminalVelocity;
-    }
-
-    // Apply velocity to position
-    player.position.x += player.velocity.x * deltaTime;
-    player.position.y += player.velocity.y * deltaTime;
-
-    // Reset acceleration for next frame
-    player.acceleration = { x: 0, y: 0 };
+  private sign(n: number) {
+    return n < 0 ? -1 : n > 0 ? 1 : 0;
   }
 
-  private applyFriction(player: PhysicsObject, deltaTime: number): void {
-    if (player.grounded && player.acceleration.x === 0) {
-      player.velocity.x -= player.velocity.x * FRICTION * deltaTime;
+  updatePlayer(
+    player: PhysicsObject,
+    input: { left: boolean; right: boolean; jump: boolean },
+    dt: number
+  ): void {
+    // Horizontal input -> acceleration
+    let ax = 0;
+    if (input.left) ax -= PLAYER_ACCEL_X;
+    if (input.right) ax += PLAYER_ACCEL_X;
 
-      // Snap to 0 if very slow
-      if (Math.abs(player.velocity.x) < VELOCITY_THRESHOLD) {
-        player.velocity.x = 0;
-      }
-    } else if (player.grounded) {
-      if (!this.wasGrounded) {
-        this.groundedTime = 0;
-      } else {
-        this.groundedTime += deltaTime;
-      }
+    // Apply drag (different on air/ground). Drag is proportional to velocity.
+    const drag = player.grounded ? PLAYER_DRAG_GROUND : PLAYER_DRAG_AIR;
+    const dragForce = -player.velocity.x * drag;
 
-      if (player.acceleration.x === 0) {
-        let friction = 0;
+    // Horizontal dynamics
+    player.velocity.x += (ax + dragForce) * dt;
 
-        if (this.groundedTime < FRICTION_GRACE_PERIOD) {
-          friction = 0;
-        } else if (
-          this.groundedTime <
-          FRICTION_GRACE_PERIOD + FRICTION_RAMP_DURATION
-        ) {
-          const t =
-            (this.groundedTime - FRICTION_GRACE_PERIOD) /
-            FRICTION_RAMP_DURATION;
-          friction = FRICTION_MIN + t * (FRICTION - FRICTION_MIN);
-        } else {
-          friction = FRICTION;
-        }
-
-        player.velocity.x -= player.velocity.x * friction * deltaTime;
-
-        // Snap to zero
-        if (Math.abs(player.velocity.x) < VELOCITY_THRESHOLD) {
-          player.velocity.x = 0;
-        }
-      }
-    } else {
-      this.groundedTime = 0;
+    // Optional gentle clamp (pre‑integration), not hard snap
+    if (PLAYER_MAX_SPEED_X > 0) {
+      const sgn = this.sign(player.velocity.x);
+      player.velocity.x =
+        Math.min(Math.abs(player.velocity.x), PLAYER_MAX_SPEED_X) * sgn;
     }
 
-    this.wasGrounded = player.grounded;
-  }
+    // Gravity
+    player.velocity.y += GRAVITY * dt;
+    // Terminal velocity
+    if (player.velocity.y > TERMINAL_VELOCITY)
+      player.velocity.y = TERMINAL_VELOCITY;
 
-  applyImpulse(obj: PhysicsObject, dx: number, dy: number): void {
-    obj.velocity.x += dx;
-    obj.velocity.y += dy;
+    // Integrate
+    player.position.x += player.velocity.x * dt;
+    player.position.y += player.velocity.y * dt;
+
+    // Call your collision resolver AFTER integration
+    // and ensure it adjusts both position *and* velocity tangentially:
+    // e.g., if floor hit: player.position.y = floorY; player.velocity.y = 0; player.grounded = true;
+    // if wall hit: player.position.x = wallX; player.velocity.x = 0;
+
+    // If you have “friction” as a scalar, apply only when grounded & no input:
+    if (player.grounded && !input.left && !input.right) {
+      const f = Math.max(0, 1 - FRICTION * dt);
+      player.velocity.x *= f;
+      if (Math.abs(player.velocity.x) < 0.01) player.velocity.x = 0;
+    }
   }
 }

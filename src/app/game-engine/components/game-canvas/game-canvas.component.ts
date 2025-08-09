@@ -25,6 +25,8 @@ import {
   CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
+  PLATFORM_WIDTH,
+  PLATFORM_HEIGHT,
 } from '../../../core/game.config';
 
 @Component({
@@ -34,30 +36,29 @@ import {
   styleUrl: './game-canvas.component.scss',
 })
 export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
-  /**
-   * The player object to render on the canvas.
-   */
-  @Input() player!: {
-    position: { x: number; y: number };
-    velocity: { x: number; y: number };
-    acceleration: { x: number; y: number };
-    grounded: boolean;
-  };
-  /**
-   * The platform object to render on the canvas.
-   */
-  @Input() platform!: {
-    position: { x: number; y: number };
-    size: { width: number; height: number };
-  };
-  @Input() cameraX = 0;
   @Input() layers: {
     key: string;
     speed: number;
     color?: string;
     height: number;
-    yFromBottom?: number; // Optional property for y offset
+    yFromBottom?: number;
   }[] = [];
+
+  @Input() snapshot!: {
+    cam: number;
+    playerX: number;
+    playerY: number;
+    platformX: number;
+    platformY: number;
+  };
+  @Input() snapshotPrev!: {
+    cam: number;
+    playerX: number;
+    playerY: number;
+    platformX: number;
+    platformY: number;
+  };
+  @Input() lastUpdateAtMs = 0;
 
   @ViewChild('gameCanvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -72,15 +73,40 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private assetLoaderService = inject(AssetLoaderService);
   private rendererService = inject(RendererService);
 
+  private readonly FIXED_DT_MS = 1000 / 60; // your Physics dt
+
+  private lerp(a: number, b: number, t: number) {
+    return a + (b - a) * t;
+  }
+  private clamp01(x: number) {
+    return x < 0 ? 0 : x > 1 ? 1 : x;
+  }
+
   /**
    * Initializes the canvas context after the view has been initialized.
    * Sets the canvas width and height based on the component's properties.
    */
   ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = CANVAS_HEIGHT;
-    this.ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d')!;
+    this.ctx = ctx;
+
+    // Logical size (what your game uses)
+    const w = CANVAS_WIDTH;
+    const h = CANVAS_HEIGHT;
+
+    // Physical size (match device pixels)
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(w * ratio);
+    canvas.height = Math.floor(h * ratio);
+
+    // Keep CSS size the same (so layout doesn’t change)
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+
+    // Map logical coordinates -> physical pixels
+    // Important: do NOT also call ctx.scale(); setTransform replaces it.
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
   /**
@@ -88,9 +114,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    * Sets up the canvas size and starts the game loop.
    */
   ngOnInit(): void {
-    this.gameLoop.start();
-    this.frameSub = this.gameLoop.frame.subscribe((dt: number) => {
-      this.update(dt);
+    this.frameSub = this.gameLoop.render$.subscribe(() => {
       this.render();
     });
   }
@@ -100,7 +124,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   ngOnDestroy(): void {
     this.frameSub?.unsubscribe();
-    this.gameLoop.stop();
   }
 
   /**
@@ -118,29 +141,55 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   render() {
     this.rendererService.clear(this.ctx, this.canvasWidth, this.canvasHeight);
 
+    // compute alpha based on time since last physics tick
+    const now = performance.now();
+    const alpha = this.clamp01((now - this.lastUpdateAtMs) / this.FIXED_DT_MS);
+
+    // interpolate world & camera
+    const cam = this.lerp(this.snapshotPrev.cam, this.snapshot.cam, alpha);
+    const playerX = this.lerp(
+      this.snapshotPrev.playerX,
+      this.snapshot.playerX,
+      alpha
+    );
+    const playerY = this.lerp(
+      this.snapshotPrev.playerY,
+      this.snapshot.playerY,
+      alpha
+    );
+    const platformX = this.lerp(
+      this.snapshotPrev.platformX,
+      this.snapshot.platformX,
+      alpha
+    );
+    const platformY = this.lerp(
+      this.snapshotPrev.platformY,
+      this.snapshot.platformY,
+      alpha
+    );
+
     // BACKGROUND → FOREGROUND
     for (const layer of this.layers) {
       const img = this.assetLoaderService.getImage(layer.key);
-      const offsetX = this.cameraX * layer.speed;
       this.rendererService.drawParallaxLayer(
         this.ctx,
         img,
         this.canvasWidth,
         this.canvasHeight,
-        offsetX,
+        cam * layer.speed,
         layer.yFromBottom || 0, // Pass yFromBottom from the layer
         layer.height,
         layer.color
       );
     }
 
-    // WORLD (example platform and player rendering)
+    // WORLD (platform and player rendering, with cameraY)
     this.rendererService.drawRect(
       this.ctx,
-      this.platform.position.x - this.cameraX,
-      this.platform.position.y,
-      this.platform.size.width,
-      this.platform.size.height,
+      platformX - cam,
+      platformY,
+      PLATFORM_WIDTH,
+      PLATFORM_HEIGHT,
       'gray'
     );
 
@@ -148,8 +197,8 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.rendererService.drawImage(
       this.ctx,
       playerImg,
-      this.player.position.x - this.cameraX, // Use dynamic player position
-      this.player.position.y, // Use dynamic player position
+      playerX - cam,
+      playerY,
       PLAYER_WIDTH,
       PLAYER_HEIGHT
     );
