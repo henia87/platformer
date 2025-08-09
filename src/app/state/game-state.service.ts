@@ -35,12 +35,4 @@ export class GameStateService {
       height: PLATFORM_HEIGHT,
     }),
   ];
-
-  getPlatforms() {
-    return this.platforms;
-  }
-
-  getPlayer() {
-    return this.player;
-  }
 }
