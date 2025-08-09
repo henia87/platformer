@@ -1,3 +1,9 @@
+/**
+ * InputService handles keyboard input and exposes the current input state as an observable.
+ * It tracks pressed keys and updates the state for left, right, and jump actions.
+ *
+ * @file InputService provides keyboard input management for the game.
+ */
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
@@ -30,11 +36,17 @@ export class InputService implements OnDestroy {
     this.updateInputState();
   };
 
+  /**
+   * Sets up event listeners for keyboard input.
+   */
   constructor() {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
 
+  /**
+   * Updates the input state observable based on currently pressed keys.
+   */
   private updateInputState(): void {
     const newState: KeyState = {
       left: this.keysPressed.has('a') || this.keysPressed.has('arrowleft'),
@@ -44,6 +56,9 @@ export class InputService implements OnDestroy {
     this.inputState$.next(newState);
   }
 
+  /**
+   * Cleans up event listeners when the service is destroyed.
+   */
   ngOnDestroy(): void {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);

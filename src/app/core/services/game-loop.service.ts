@@ -1,3 +1,9 @@
+/**
+ * GameLoopService manages the main game loop, providing fixed update and render steps.
+ * It emits observables for both physics updates and rendering frames.
+ *
+ * @file GameLoopService provides the main loop for the game engine.
+ */
 import { Injectable, NgZone, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 
@@ -20,6 +26,9 @@ export class GameLoopService {
   private renderSubject = new Subject<number>();
   public render$: Observable<number> = this.renderSubject.asObservable();
 
+  /**
+   * Starts the game loop, emitting update and render events.
+   */
   start(): void {
     if (this.running) return;
     this.running = true;
@@ -61,6 +70,9 @@ export class GameLoopService {
     });
   }
 
+  /**
+   * Stops the game loop and resets timing state.
+   */
   stop(): void {
     this.running = false;
     this.lastTime = 0;

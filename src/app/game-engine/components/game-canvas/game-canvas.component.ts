@@ -29,6 +29,16 @@ import {
   PLATFORM_HEIGHT,
 } from '../../../core/game.config';
 
+/**
+ * GameCanvasComponent is responsible for rendering the main game canvas.
+ * It draws the player, platforms, and other entities using the RendererService.
+ * The component subscribes to the game loop and updates the canvas every frame.
+ *
+ * @input layers - Array of parallax background layers to render.
+ * @input snapshot - The current game state snapshot (camera, player, platform positions).
+ * @input snapshotPrev - The previous game state snapshot for interpolation.
+ * @input lastUpdateAtMs - Timestamp of the last physics update (for interpolation).
+ */
 @Component({
   selector: 'app-game-canvas',
   standalone: false,
@@ -36,6 +46,10 @@ import {
   styleUrl: './game-canvas.component.scss',
 })
 export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
+  /**
+   * Array of parallax background layers to render.
+   * @input
+   */
   @Input() layers: {
     key: string;
     speed: number;
@@ -44,6 +58,10 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     yFromBottom?: number;
   }[] = [];
 
+  /**
+   * The current game state snapshot (camera, player, platform positions).
+   * @input
+   */
   @Input() snapshot!: {
     cam: number;
     playerX: number;
@@ -51,6 +69,11 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     platformX: number;
     platformY: number;
   };
+
+  /**
+   * The previous game state snapshot for interpolation.
+   * @input
+   */
   @Input() snapshotPrev!: {
     cam: number;
     playerX: number;
@@ -58,11 +81,27 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     platformX: number;
     platformY: number;
   };
+
+  /**
+   * Timestamp of the last physics update (for interpolation).
+   * @input
+   */
   @Input() lastUpdateAtMs = 0;
 
+  /**
+   * Reference to the canvas element in the template.
+   */
   @ViewChild('gameCanvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
+
+  /**
+   * The 2D rendering context for the canvas.
+   */
   private ctx!: CanvasRenderingContext2D;
+
+  /**
+   * Subscription to the game loop's render observable.
+   */
   private frameSub?: Subscription;
   private x = 0;
 
@@ -73,11 +112,27 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private assetLoaderService = inject(AssetLoaderService);
   private rendererService = inject(RendererService);
 
+  /**
+   * Fixed delta time for physics updates (ms).
+   */
   private readonly FIXED_DT_MS = 1000 / 60; // your Physics dt
 
+  /**
+   * Linearly interpolates between two values.
+   * @param a - Start value
+   * @param b - End value
+   * @param t - Interpolation factor (0..1)
+   * @returns Interpolated value
+   */
   private lerp(a: number, b: number, t: number) {
     return a + (b - a) * t;
   }
+
+  /**
+   * Clamps a value between 0 and 1.
+   * @param x - Value to clamp
+   * @returns Clamped value
+   */
   private clamp01(x: number) {
     return x < 0 ? 0 : x > 1 ? 1 : x;
   }
@@ -110,8 +165,8 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Initializes the game canvas component.
-   * Sets up the canvas size and starts the game loop.
+   * Initializes the game canvas component and subscribes to the game loop.
+   * Starts rendering on each frame.
    */
   ngOnInit(): void {
     this.frameSub = this.gameLoop.render$.subscribe(() => {
@@ -137,6 +192,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /**
    * Renders the current game state to the canvas.
+   * Interpolates between previous and current snapshots for smooth rendering.
    */
   render() {
     this.rendererService.clear(this.ctx, this.canvasWidth, this.canvasHeight);
