@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { getCanvasWidth, WORLD_WIDTH } from '../game.config';
+import { Vector2 } from '../utils/vector2';
 
 @Injectable({ providedIn: 'root' })
 export class CameraService {
@@ -40,7 +41,7 @@ export class CameraService {
 
     // smooth (constant factor works fine with your fixed timestep)
     const SMOOTH = 0.15; // tweak 0.1..0.2
-    this.x += (target - this.x) * SMOOTH;
+    this.x = Vector2.lerp({ x: this.x, y: 0 }, { x: target, y: 0 }, SMOOTH).x;
   }
 
   get xPos(): number {
