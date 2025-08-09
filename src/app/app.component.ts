@@ -16,6 +16,7 @@ import {
   PLATFORM_HEIGHT,
   PLATFORM_Y,
   PLAYER_ACCELERATION,
+  WORLD_WIDTH,
 } from './core/game.config';
 
 @Component({
@@ -32,8 +33,20 @@ export class AppComponent implements OnInit {
   private collisionService = inject(CollisionService);
   private cameraService = inject(CameraService);
   private parallaxLayersService = inject(ParallaxLayersService);
+  private inputSnapshot = { left: false, right: false, jump: false };
 
   title = 'platformer';
+
+  snapshot = {
+    cam: 0,
+    playerX: 0,
+    playerY: 0,
+    platformX: 0,
+    platformY: 0,
+  };
+
+  snapshotPrev = { cam: 0, playerX: 0, playerY: 0, platformX: 0, platformY: 0 };
+  lastUpdateAtMs = 0;
 
   player = {
     position: { x: 0, y: 0 },
@@ -93,41 +106,65 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.inputService.inputState.subscribe((state) => {
-      this.player.acceleration.x = 0;
+    this.cameraService.setWorldWidth(WORLD_WIDTH);
 
-      if (state.left) this.player.acceleration.x = -PLAYER_ACCELERATION;
-      if (state.right) this.player.acceleration.x = PLAYER_ACCELERATION;
+    // Place player on the platform for the first frame
+    this.player.position.x = 0; // wherever you want to start
+    this.player.position.y = CANVAS_HEIGHT - PLAYER_HEIGHT;
+    this.player.grounded = true;
 
-      if (state.jump) {
-        this.jumpBuffer = this.JUMP_BUFFER_MAX;
-      }
-    });
+    // Compute initial camera and snapshot BEFORE starting the loop
+    const playerCenterX = this.player.position.x + PLAYER_WIDTH / 2;
+    this.cameraService.update(playerCenterX);
 
+    this.snapshot = {
+      cam: this.cameraService.xPos,
+      playerX: this.player.position.x,
+      playerY: this.player.position.y,
+      platformX: this.platform.position.x,
+      platformY: this.platform.position.y,
+    };
+
+    // Start game loop
     this.gameLoopService.start();
 
-    this.gameLoopService.frame.subscribe((deltaTime) => {
-      // --- Coyote Time update ---
-      if (this.jumpBuffer > 0) {
-        this.jumpBuffer -= deltaTime;
-      }
+    // Input service
+    this.inputService.inputState.subscribe((state) => {
+      this.inputSnapshot = state;
+      this.player.acceleration.x = 0;
+      if (state.left) this.player.acceleration.x = -PLAYER_ACCELERATION;
+      if (state.right) this.player.acceleration.x = PLAYER_ACCELERATION;
+      if (state.jump) this.jumpBuffer = this.JUMP_BUFFER_MAX;
+    });
 
-      if (this.player.grounded) {
-        this.coyoteTime = this.COYOTE_TIME_MAX;
-      } else if (this.coyoteTime > 0) {
-        this.coyoteTime -= deltaTime;
-      }
+    let frameCounter = 0; // DEBUG ONLY
+    // Game logic
+    this.gameLoopService.update$.subscribe((dtSec) => {
+      const deltaTime = dtSec; // already fixed 1/60s
 
-      // --- Jump Buffer update and jump logic ---
+      frameCounter = (frameCounter ?? 0) + 1;
+      if (frameCounter % 60 === 0) console.log('update tick', frameCounter);
+
+      // --- Coyote/Jump buffer ---
+      if (this.jumpBuffer > 0) this.jumpBuffer -= deltaTime;
+      if (this.player.grounded) this.coyoteTime = this.COYOTE_TIME_MAX;
+      else if (this.coyoteTime > 0) this.coyoteTime -= deltaTime;
+
       if (this.jumpBuffer > 0 && this.coyoteTime > 0) {
-        this.physicsService.applyImpulse(this.player, 0, PLAYER_JUMP);
+        this.player.velocity.y = PLAYER_JUMP;
         this.player.grounded = false;
         this.coyoteTime = 0;
         this.jumpBuffer = 0;
       }
 
-      this.physicsService.updatePlayer(this.player, deltaTime);
+      // --- Physics step ---
+      this.physicsService.updatePlayer(
+        this.player,
+        this.inputSnapshot,
+        deltaTime
+      );
 
+      // --- Collisions (unchanged) ---
       const playerBox = {
         position: this.player.position,
         size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
@@ -136,7 +173,6 @@ export class AppComponent implements OnInit {
         position: this.platform.position,
         size: this.platform.size,
       };
-
       const isColliding = this.collisionService.checkAABBCollision(
         playerBox,
         platformBox
@@ -149,12 +185,10 @@ export class AppComponent implements OnInit {
         const platformBottom = platformBox.position.y + platformBox.size.height;
 
         if (this.player.velocity.y > 0 && playerBottom > platformTop) {
-          // Landing on top of platform
           this.player.grounded = true;
           this.player.velocity.y = 0;
           this.player.position.y = platformTop - PLAYER_HEIGHT;
         } else if (this.player.velocity.y < 0 && playerTop < platformBottom) {
-          // Hitting from below
           this.player.velocity.y = 0;
           this.player.position.y = platformBottom;
         } else {
@@ -164,14 +198,13 @@ export class AppComponent implements OnInit {
         this.player.grounded = false;
       }
 
-      // Prevent player from leaving the canvas area
+      // --- World bounds (unchanged) ---
       if (this.player.position.x < 0) {
         this.player.position.x = 0;
-        this.player.velocity.x = 0;
-      }
-      if (this.player.position.x > CANVAS_WIDTH - PLAYER_WIDTH) {
-        this.player.position.x = CANVAS_WIDTH - PLAYER_WIDTH;
-        this.player.velocity.x = 0;
+        if (this.player.acceleration.x < 0) this.player.velocity.x = 0;
+      } else if (this.player.position.x > WORLD_WIDTH - PLAYER_WIDTH) {
+        this.player.position.x = WORLD_WIDTH - PLAYER_WIDTH;
+        if (this.player.acceleration.x > 0) this.player.velocity.x = 0;
       }
       if (this.player.position.y < 0) {
         this.player.position.y = 0;
@@ -184,9 +217,26 @@ export class AppComponent implements OnInit {
         this.player.grounded = true;
       }
 
-      const playerX = this.player.position.x; // Get the updated player position
-      this.cameraService.update(playerX); // Update camera based on player position
-      this.cameraX = this.cameraService.xPos; // Sync cameraX with CameraService position
+      // --- Camera ---
+      const playerCenterX = this.player.position.x + PLAYER_WIDTH / 2;
+      this.cameraService.update(playerCenterX);
+      this.cameraX = this.cameraService.xPos;
+
+      // copy current -> prev (field by field)
+      this.snapshotPrev.cam = this.snapshot.cam;
+      this.snapshotPrev.playerX = this.snapshot.playerX;
+      this.snapshotPrev.playerY = this.snapshot.playerY;
+      this.snapshotPrev.platformX = this.snapshot.platformX;
+      this.snapshotPrev.platformY = this.snapshot.platformY;
+
+      // write new current (field by field)
+      this.snapshot.cam = this.cameraService.xPos;
+      this.snapshot.playerX = this.player.position.x;
+      this.snapshot.playerY = this.player.position.y;
+      this.snapshot.platformX = this.platform.position.x;
+      this.snapshot.platformY = this.platform.position.y;
+
+      this.lastUpdateAtMs = performance.now();
     });
 
     this.loadAssets();
