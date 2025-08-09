@@ -1,4 +1,3 @@
-// platform.model.ts
 import { PhysicsObject } from './physics-object.model';
 import { PLATFORM_WIDTH, PLATFORM_HEIGHT } from '../game.config';
 

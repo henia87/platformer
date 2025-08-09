@@ -7,6 +7,7 @@ import { CollisionService } from './core/services/collision.service';
 import { CameraService } from './core/services/camera.service';
 import { ParallaxLayersService } from './core/services/parallax-layers.service';
 import { GameStateService } from './state/game-state.service';
+import { FloatingText } from './core/models/collectible.model';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -15,6 +16,9 @@ import {
   PLAYER_JUMP,
   PLAYER_ACCELERATION,
   WORLD_WIDTH,
+  PICKUP_FADE_TIME,
+  LABEL_TTL,
+  LABEL_VY,
 } from './core/game.config';
 
 /**
@@ -68,11 +72,11 @@ export class AppComponent implements OnInit {
   /** Timestamp of last physics update. */
   lastUpdateAtMs = 0;
 
-  /** Player object (position, velocity, acceleration, grounded). */
   player = this.gameStateService.player;
-
-  /** Platform objects (position and size). */
   platforms = this.gameStateService.platforms;
+  collectibles = this.gameStateService.collectibles;
+  enemies = this.gameStateService.enemies;
+  floaters: FloatingText[] = [];
 
   /** Coyote time counter (seconds). Allows jumping shortly after leaving a platform. */
   private coyoteTime = 0;
@@ -104,6 +108,8 @@ export class AppComponent implements OnInit {
         'player',
         'assets/sprites/player.png'
       );
+
+      // Backgrounds
       await this.assetLoaderService.loadImage('bg-sky', 'assets/bg/bg-sky.png');
       await this.assetLoaderService.loadImage(
         'bg-hills',
@@ -118,13 +124,42 @@ export class AppComponent implements OnInit {
         'assets/bg/bg-near.png'
       );
 
+      // Collectibles
+      await this.assetLoaderService.loadImage(
+        'big-beer',
+        'assets/sprites/big-beer.png'
+      );
+      await this.assetLoaderService.loadImage(
+        'small-beer',
+        'assets/sprites/small-beer.png'
+      );
+      await this.assetLoaderService.loadImage(
+        'coin',
+        'assets/sprites/coin.png'
+      );
+
+      // Enemies
+      await this.assetLoaderService.loadImage(
+        'punk',
+        'assets/sprites/punk.png'
+      );
+      await this.assetLoaderService.loadImage(
+        'homeless',
+        'assets/sprites/homeless.png'
+      );
+
       console.log(
         'Assets loaded:',
         this.assetLoaderService.getImage('player'),
         this.assetLoaderService.getImage('bg-sky'),
         this.assetLoaderService.getImage('bg-hills'),
         this.assetLoaderService.getImage('bg-buildings'),
-        this.assetLoaderService.getImage('bg-near')
+        this.assetLoaderService.getImage('bg-near'),
+        this.assetLoaderService.getImage('big-beer'),
+        this.assetLoaderService.getImage('small-beer'),
+        this.assetLoaderService.getImage('coin'),
+        this.assetLoaderService.getImage('punk'),
+        this.assetLoaderService.getImage('homeless')
       );
     } catch (error) {
       console.error('Asset loading failed:', error);
@@ -239,6 +274,97 @@ export class AppComponent implements OnInit {
         this.player.velocity.y = 0;
         this.player.grounded = true;
       }
+
+      // --- Enemy patrol (minimal) ---
+      for (const e of this.enemies) {
+        if (e.patrolMaxX > e.patrolMinX) {
+          e.position.x += e.speed * e.dir * deltaTime;
+          if (e.position.x < e.patrolMinX) {
+            e.position.x = e.patrolMinX;
+            e.dir = 1;
+          }
+          if (e.position.x > e.patrolMaxX) {
+            e.position.x = e.patrolMaxX;
+            e.dir = -1;
+          }
+        }
+      }
+
+      // --- Collectible pickup ---
+      for (const c of this.collectibles) {
+        if (c.collected) continue;
+        const hit = this.collisionService.checkAABBCollision(
+          {
+            position: this.player.position,
+            size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
+          },
+          { position: c.position, size: { width: c.width, height: c.height } }
+        );
+        if (hit) {
+          c.collected = true;
+          c.fade = PICKUP_FADE_TIME;
+
+          const label =
+            c.type === 'coin'
+              ? '+1'
+              : c.beerVariant === 'small'
+              ? '+2 HP'
+              : '+5 HP';
+
+          this.floaters.push({
+            text: label,
+            x: c.position.x,
+            y: c.position.y - 4,
+            ttl: LABEL_TTL,
+            vy: LABEL_VY,
+          });
+
+          if (c.type === 'coin') {
+            this.player.score += 1;
+          } else {
+            const heal = c.beerVariant === 'small' ? 2 : 5;
+            this.player.health = Math.min(99, this.player.health + heal);
+          }
+          // TODO: SFX/particles
+        }
+      }
+
+      // --- Enemy collision (hurt player) ---
+      for (const e of this.enemies) {
+        const hit = this.collisionService.checkAABBCollision(
+          {
+            position: this.player.position,
+            size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
+          },
+          { position: e.position, size: { width: e.width, height: e.height } }
+        );
+        if (hit) {
+          const dmg = e.type === 'punk' ? 15 : 10; // per your spec
+          this.player.health = Math.max(0, this.player.health - dmg);
+
+          // small knockback
+          const kb = 140;
+          this.player.velocity.x =
+            this.player.position.x < e.position.x ? -kb : kb;
+          this.player.velocity.y = -120;
+          this.player.grounded = false;
+        }
+      }
+
+      // fade-out timer for collected items
+      for (const c of this.collectibles) {
+        if (c.collected && c.fade > 0) {
+          c.fade -= deltaTime;
+          if (c.fade < 0) c.fade = 0;
+        }
+      }
+
+      // floating labels
+      for (const f of this.floaters) {
+        f.ttl -= deltaTime;
+        f.y += f.vy * deltaTime;
+      }
+      this.floaters = this.floaters.filter((f) => f.ttl > 0);
 
       /** Camera */
       const playerCenterX = this.player.position.x + PLAYER_WIDTH / 2;

@@ -154,4 +154,29 @@ export class RendererService {
       ctx.drawImage(img, 0, 0, iw, ih, x, y, scaledWidth, height);
     }
   }
+
+  drawText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    alpha = 1,
+    font = 'bold 12px monospace',
+    fill = '#fff',
+    align: CanvasTextAlign = 'left'
+  ): void {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = font;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'bottom';
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.strokeText(text, x, y);
+
+    ctx.fillStyle = fill;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
 }

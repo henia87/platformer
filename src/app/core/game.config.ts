@@ -13,10 +13,8 @@ export function getCanvasHeight(): number {
   return 600;
 }
 
-// Update CANVAS_WIDTH and CANVAS_HEIGHT to use the new functions
 export const CANVAS_WIDTH = getCanvasWidth();
 export const CANVAS_HEIGHT = getCanvasHeight();
-export const LEVEL_PADDING = 200; // Padding for platform culling
 
 // Player
 export const PLAYER_WIDTH = 40;
@@ -29,6 +27,22 @@ export const VELOCITY_THRESHOLD = 5; // Minimum velocity before snapping to zero
 export const PLAYER_MAX_SPEED_X = 450; // tuned for smooth camera
 export const PLAYER_DRAG_AIR = 1.5; // 0..1 per second (e.g., 1.5)
 export const PLAYER_DRAG_GROUND = 6; // 0..1 per second (e.g., 6)
+
+// Collectibles
+export const COIN_WIDTH = 16;
+export const COIN_HEIGHT = 16;
+export const BEER_WIDTH = 32;
+export const BEER_HEIGHT = 32;
+
+// Collectible FX
+export const PICKUP_FADE_TIME = 0.3; // seconds
+export const PICKUP_RISE_PIXELS = 12; // total rise over fade
+export const LABEL_TTL = 0.6; // seconds
+export const LABEL_VY = -40; // px/sec (upwards)
+
+// Enemies
+export const ENEMY_WIDTH = PLAYER_WIDTH;
+export const ENEMY_HEIGHT = PLAYER_HEIGHT;
 
 // Physics
 export const GRAVITY = 1000; // pixels/sec²
