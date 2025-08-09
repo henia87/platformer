@@ -9,9 +9,8 @@ import {
 export interface FloatingText {
   text: string;
   x: number;
-  y: number;
-  ttl: number;
-  vy: number;
+  y0: number;
+  bornAt: number;
 }
 export type CollectibleType = 'coin' | 'beer';
 export type BeerVariant = 'big' | 'small';

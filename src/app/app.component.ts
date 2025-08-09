@@ -7,7 +7,6 @@ import { CollisionService } from './core/services/collision.service';
 import { CameraService } from './core/services/camera.service';
 import { ParallaxLayersService } from './core/services/parallax-layers.service';
 import { GameStateService } from './state/game-state.service';
-import { FloatingText } from './core/models/collectible.model';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -17,8 +16,7 @@ import {
   PLAYER_ACCELERATION,
   WORLD_WIDTH,
   PICKUP_FADE_TIME,
-  LABEL_TTL,
-  LABEL_VY,
+  LABEL_TTL_SEC,
 } from './core/game.config';
 
 /**
@@ -76,7 +74,7 @@ export class AppComponent implements OnInit {
   platforms = this.gameStateService.platforms;
   collectibles = this.gameStateService.collectibles;
   enemies = this.gameStateService.enemies;
-  floaters: FloatingText[] = [];
+  floaters = this.gameStateService.floaters;
 
   /** Coyote time counter (seconds). Allows jumping shortly after leaving a platform. */
   private coyoteTime = 0;
@@ -311,13 +309,11 @@ export class AppComponent implements OnInit {
               ? '+2 HP'
               : '+5 HP';
 
-          this.floaters.push({
-            text: label,
-            x: c.position.x,
-            y: c.position.y - 4,
-            ttl: LABEL_TTL,
-            vy: LABEL_VY,
-          });
+          this.gameStateService.spawnFloater(
+            c.position.x,
+            c.position.y - 4,
+            label
+          );
 
           if (c.type === 'coin') {
             this.player.score += 1;
@@ -359,12 +355,8 @@ export class AppComponent implements OnInit {
         }
       }
 
-      // floating labels
-      for (const f of this.floaters) {
-        f.ttl -= deltaTime;
-        f.y += f.vy * deltaTime;
-      }
-      this.floaters = this.floaters.filter((f) => f.ttl > 0);
+      const now = performance.now();
+      this.gameStateService.pruneFloaters(now, LABEL_TTL_SEC * 1000);
 
       /** Camera */
       const playerCenterX = this.player.position.x + PLAYER_WIDTH / 2;

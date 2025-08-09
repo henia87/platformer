@@ -23,6 +23,7 @@ import { GameLoopService } from '../../../core/services/game-loop.service';
 import { Subscription } from 'rxjs';
 import { AssetLoaderService } from '../../../core/services/asset-loader.service';
 import { RendererService } from '../../../core/services/renderer.service';
+import { GameStateService } from '../../../state/game-state.service';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -33,7 +34,8 @@ import {
   ENEMY_HEIGHT,
   PICKUP_FADE_TIME,
   PICKUP_RISE_PIXELS,
-  LABEL_TTL,
+  LABEL_TTL_SEC,
+  LABEL_VY_PX_PER_SEC,
 } from '../../../core/game.config';
 import { Vector2 } from '../../../core/utils/vector2';
 import { Platform } from '../../../core/models/platform.model';
@@ -93,15 +95,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Enemies */
   @Input() enemies: Enemy[] = [];
 
-  /** Floating text elements */
-  @Input() floaters: {
-    text: string;
-    x: number;
-    y: number;
-    ttl: number;
-    vy: number;
-  }[] = [];
-
   /**
    * Reference to the canvas element in the template.
    */
@@ -125,6 +118,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private gameLoop = inject(GameLoopService);
   private assetLoaderService = inject(AssetLoaderService);
   private rendererService = inject(RendererService);
+  private gameStateService = inject(GameStateService);
 
   /**
    * Fixed delta time for physics updates (ms).
@@ -337,14 +331,19 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       PLAYER_HEIGHT
     );
 
-    for (const f of this.floaters) {
-      const alpha = Math.max(0, f.ttl / LABEL_TTL);
+    for (const f of this.gameStateService.floaters) {
+      const tSec = (now - f.bornAt) / 1000;
+      const a = Math.max(0, 1 - tSec / LABEL_TTL_SEC);
+      if (a <= 0) continue;
+
+      const y = f.y0 + LABEL_VY_PX_PER_SEC * tSec;
+
       this.rendererService.drawText(
         this.ctx,
         f.text,
         f.x - cam,
-        f.y,
-        alpha,
+        y,
+        a,
         'bold 12px monospace',
         '#ffd54a',
         'center'

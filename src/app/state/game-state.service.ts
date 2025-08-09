@@ -3,6 +3,7 @@ import { Player } from '../core/models/player.model';
 import { Platform } from '../core/models/platform.model';
 import { Collectible } from '../core/models/collectible.model';
 import { Enemy } from '../core/models/enemy.model';
+import { FloatingText } from '../core/models/collectible.model';
 import {
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
@@ -76,4 +77,19 @@ export class GameStateService {
       dir: -1,
     }),
   ];
+
+  floaters: FloatingText[] = [];
+
+  spawnFloater(x: number, y: number, text: string) {
+    this.floaters.push({ text, x, y0: y, bornAt: performance.now() });
+  }
+
+  /** In-place prune to avoid breaking the array reference */
+  pruneFloaters(nowMs: number, ttlMs: number) {
+    for (let i = this.floaters.length - 1; i >= 0; i--) {
+      if (nowMs - this.floaters[i].bornAt >= ttlMs) {
+        this.floaters.splice(i, 1);
+      }
+    }
+  }
 }

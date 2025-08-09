@@ -37,8 +37,8 @@ export const BEER_HEIGHT = 32;
 // Collectible FX
 export const PICKUP_FADE_TIME = 0.3; // seconds
 export const PICKUP_RISE_PIXELS = 12; // total rise over fade
-export const LABEL_TTL = 0.6; // seconds
-export const LABEL_VY = -40; // px/sec (upwards)
+export const LABEL_TTL_SEC = 0.6; // seconds
+export const LABEL_VY_PX_PER_SEC = -40; // px/sec (upwards)
 
 // Enemies
 export const ENEMY_WIDTH = PLAYER_WIDTH;
