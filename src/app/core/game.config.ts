@@ -20,7 +20,7 @@ export const LEVEL_PADDING = 200; // Padding for platform culling
 
 // Player
 export const PLAYER_WIDTH = 40;
-export const PLAYER_HEIGHT = 60;
+export const PLAYER_HEIGHT = 50;
 export const PLAYER_SPEED = 300; // pixels/sec
 export const PLAYER_JUMP = -600; // jump impulse (pixels/sec)
 export const PLAYER_ACCELERATION = 1200; // How quickly the player reaches top speed (pixels/sec^2), before: 2500

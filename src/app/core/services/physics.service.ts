@@ -5,7 +5,7 @@
  * @file PhysicsService provides physics simulation for the game engine.
  */
 import { Injectable } from '@angular/core';
-import { PhysicsObject } from '../models/physics-object.model';
+import { Vector2 } from '../utils/vector2';
 import {
   GRAVITY,
   TERMINAL_VELOCITY,
@@ -15,7 +15,6 @@ import {
   PLAYER_DRAG_GROUND,
   PLAYER_MAX_SPEED_X,
 } from '../game.config';
-import { Vector2 } from '../utils/vector2';
 
 @Injectable({ providedIn: 'root' })
 export class PhysicsService {
@@ -35,7 +34,12 @@ export class PhysicsService {
    * @param dt - Delta time in seconds since the last update.
    */
   updatePlayer(
-    player: PhysicsObject,
+    player: {
+      position: { x: number; y: number };
+      velocity: { x: number; y: number };
+      acceleration: { x: number; y: number };
+      grounded: boolean;
+    },
     input: { left: boolean; right: boolean; jump: boolean },
     dt: number
   ): void {

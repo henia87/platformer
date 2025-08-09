@@ -1,11 +1,3 @@
-/**
- * GameCanvasComponent is responsible for rendering the main game canvas.
- * It draws the player, platforms, and other entities using the RendererService.
- * The component subscribes to the game loop and updates the canvas every frame.
- *
- * @input player - The player object to render (position, velocity, etc.).
- * @input platform - The platform object to render (position, size).
- */
 import {
   Component,
   ElementRef,
@@ -25,21 +17,20 @@ import {
   CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
-  PLATFORM_WIDTH,
-  PLATFORM_HEIGHT,
   PARALLAX_SMOOTH,
 } from '../../../core/game.config';
 import { Vector2 } from '../../../core/utils/vector2';
+import { Platform } from '../../../core/models/platform.model';
 
 /**
  * GameCanvasComponent is responsible for rendering the main game canvas.
  * It draws the player, platforms, and other entities using the RendererService.
  * The component subscribes to the game loop and updates the canvas every frame.
  *
- * @input layers - Array of parallax background layers to render.
- * @input snapshot - The current game state snapshot (camera, player, platform positions).
- * @input snapshotPrev - The previous game state snapshot for interpolation.
- * @input lastUpdateAtMs - Timestamp of the last physics update (for interpolation).
+ * @input layers - Parallax layers to render.
+ * @input platforms - Platforms to draw (read-only render data).
+ * @input snapshot / snapshotPrev - Interpolated camera & player position.
+ * @input lastUpdateAtMs - Timestamp of last physics tick for interpolation.
  */
 @Component({
   selector: 'app-game-canvas',
@@ -68,8 +59,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     cam: number;
     playerX: number;
     playerY: number;
-    platformX: number;
-    platformY: number;
   };
 
   /**
@@ -80,8 +69,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     cam: number;
     playerX: number;
     playerY: number;
-    platformX: number;
-    platformY: number;
   };
 
   /**
@@ -89,6 +76,9 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    * @input
    */
   @Input() lastUpdateAtMs = 0;
+
+  /** Platforms */
+  @Input() platforms: Platform[] = [];
 
   /**
    * Reference to the canvas element in the template.
@@ -224,14 +214,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const playerX = p.x;
     const playerY = p.y;
 
-    const plat = Vector2.lerp(
-      { x: this.snapshotPrev.platformX, y: this.snapshotPrev.platformY },
-      { x: this.snapshot.platformX, y: this.snapshot.platformY },
-      alpha
-    );
-    const platformX = plat.x;
-    const platformY = plat.y;
-
     // BACKGROUND → FOREGROUND
     this.ensureParallaxCache(cam);
 
@@ -257,14 +239,16 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // WORLD (platform and player rendering)
-    this.rendererService.drawRect(
-      this.ctx,
-      platformX - cam,
-      platformY,
-      PLATFORM_WIDTH,
-      PLATFORM_HEIGHT,
-      'gray'
-    );
+    for (const plat of this.platforms) {
+      this.rendererService.drawRect(
+        this.ctx,
+        plat.position.x - cam,
+        plat.position.y,
+        plat.width,
+        plat.height,
+        'gray'
+      );
+    }
 
     const playerImg = this.assetLoaderService.getImage('player');
     this.rendererService.drawImage(

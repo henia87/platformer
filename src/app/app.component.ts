@@ -6,15 +6,13 @@ import { AssetLoaderService } from './core/services/asset-loader.service';
 import { CollisionService } from './core/services/collision.service';
 import { CameraService } from './core/services/camera.service';
 import { ParallaxLayersService } from './core/services/parallax-layers.service';
+import { GameStateService } from './state/game-state.service';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
   PLAYER_JUMP,
-  PLATFORM_WIDTH,
-  PLATFORM_HEIGHT,
-  PLATFORM_Y,
   PLAYER_ACCELERATION,
   WORLD_WIDTH,
 } from './core/game.config';
@@ -57,30 +55,24 @@ export class AppComponent implements OnInit {
   private collisionService = inject(CollisionService);
   private cameraService = inject(CameraService);
   private parallaxLayersService = inject(ParallaxLayersService);
+  private gameStateService = inject(GameStateService);
+
   private inputSnapshot = { left: false, right: false, jump: false };
 
   /** Current game state snapshot for rendering. */
-  snapshot = { cam: 0, playerX: 0, playerY: 0, platformX: 0, platformY: 0 };
+  snapshot = { cam: 0, playerX: 0, playerY: 0 };
 
   /** Previous game state snapshot for interpolation. */
-  snapshotPrev = { cam: 0, playerX: 0, playerY: 0, platformX: 0, platformY: 0 };
+  snapshotPrev = { cam: 0, playerX: 0, playerY: 0 };
 
   /** Timestamp of last physics update. */
   lastUpdateAtMs = 0;
 
-  /**
-   * The player object, including position, velocity, acceleration, and grounded state.
-   * @property position - Player's position (x, y)
-   * @property velocity - Player's velocity (x, y)
-   * @property acceleration - Player's acceleration (x, y)
-   * @property grounded - Whether the player is on the ground
-   */
-  player = {
-    position: { x: 0, y: 0 },
-    velocity: { x: 0, y: 0 },
-    acceleration: { x: 0, y: 0 },
-    grounded: false,
-  };
+  /** Player object (position, velocity, acceleration, grounded). */
+  player = this.gameStateService.player;
+
+  /** Platform objects (position and size). */
+  platforms = this.gameStateService.platforms;
 
   /** Coyote time counter (seconds). Allows jumping shortly after leaving a platform. */
   private coyoteTime = 0;
@@ -93,12 +85,6 @@ export class AppComponent implements OnInit {
   private jumpBuffer = 0;
   /** Maximum jump buffer time allowed (seconds). */
   private readonly JUMP_BUFFER_MAX = 0.12;
-
-  /** The main platform object (position and size). */
-  platform = {
-    position: { x: 100, y: PLATFORM_Y },
-    size: { width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
-  };
 
   canvasWidth = CANVAS_WIDTH;
   canvasHeight = CANVAS_HEIGHT;
@@ -148,12 +134,12 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.cameraService.setWorldWidth(WORLD_WIDTH);
 
-    /** Place player on the platform for the first frame */
-    this.player.position.x = 0; // wherever you want to start
+    /** First-frame player placement */
+    this.player.position.x = 0;
     this.player.position.y = CANVAS_HEIGHT - PLAYER_HEIGHT;
     this.player.grounded = true;
 
-    /** Compute initial camera and snapshot BEFORE starting the loop */
+    /** Initial camera and snapshot */
     const playerCenterX = this.player.position.x + PLAYER_WIDTH / 2;
     this.cameraService.update(playerCenterX);
 
@@ -161,8 +147,6 @@ export class AppComponent implements OnInit {
       cam: this.cameraService.xPos,
       playerX: this.player.position.x,
       playerY: this.player.position.y,
-      platformX: this.platform.position.x,
-      platformY: this.platform.position.y,
     };
 
     /** Start game loop */
@@ -181,7 +165,7 @@ export class AppComponent implements OnInit {
     this.gameLoopService.update$.subscribe((dtSec) => {
       const deltaTime = dtSec; // fixed 1/60s
 
-      /** Coyote/Jump buffer */
+      // Coyote / Jump buffer
       if (this.jumpBuffer > 0) this.jumpBuffer -= deltaTime;
       if (this.player.grounded) this.coyoteTime = this.COYOTE_TIME_MAX;
       else if (this.coyoteTime > 0) this.coyoteTime -= deltaTime;
@@ -193,46 +177,49 @@ export class AppComponent implements OnInit {
         this.jumpBuffer = 0;
       }
 
-      /** Physics step */
+      // Physics
       this.physicsService.updatePlayer(
         this.player,
         this.inputSnapshot,
         deltaTime
       );
 
-      /** Collisions */
+      // ===== COLLISIONS vs ALL PLATFORMS =====
+      let groundedThisFrame = false;
+
       const playerBox = {
         position: this.player.position,
         size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
       };
-      const platformBox = {
-        position: this.platform.position,
-        size: this.platform.size,
-      };
-      const isColliding = this.collisionService.checkAABBCollision(
-        playerBox,
-        platformBox
-      );
 
-      if (isColliding) {
+      for (const plat of this.platforms) {
+        const platformBox = {
+          position: plat.position,
+          size: { width: plat.width, height: plat.height },
+        };
+
+        const isColliding = this.collisionService.checkAABBCollision(
+          playerBox,
+          platformBox
+        );
+        if (!isColliding) continue;
+
         const playerBottom = this.player.position.y + PLAYER_HEIGHT;
         const playerTop = this.player.position.y;
         const platformTop = platformBox.position.y;
         const platformBottom = platformBox.position.y + platformBox.size.height;
 
         if (this.player.velocity.y > 0 && playerBottom > platformTop) {
-          this.player.grounded = true;
+          groundedThisFrame = true;
           this.player.velocity.y = 0;
           this.player.position.y = platformTop - PLAYER_HEIGHT;
         } else if (this.player.velocity.y < 0 && playerTop < platformBottom) {
           this.player.velocity.y = 0;
           this.player.position.y = platformBottom;
-        } else {
-          this.player.grounded = false;
         }
-      } else {
-        this.player.grounded = false;
       }
+
+      this.player.grounded = groundedThisFrame;
 
       /** World bounds */
       if (this.player.position.x < 0) {
@@ -262,15 +249,11 @@ export class AppComponent implements OnInit {
       this.snapshotPrev.cam = this.snapshot.cam;
       this.snapshotPrev.playerX = this.snapshot.playerX;
       this.snapshotPrev.playerY = this.snapshot.playerY;
-      this.snapshotPrev.platformX = this.snapshot.platformX;
-      this.snapshotPrev.platformY = this.snapshot.platformY;
 
       /** Write new current (field by field) */
       this.snapshot.cam = this.cameraService.xPos;
       this.snapshot.playerX = this.player.position.x;
       this.snapshot.playerY = this.player.position.y;
-      this.snapshot.platformX = this.platform.position.x;
-      this.snapshot.platformY = this.platform.position.y;
 
       this.lastUpdateAtMs = performance.now();
     });
