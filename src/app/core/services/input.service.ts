@@ -1,16 +1,17 @@
-/**
- * InputService handles keyboard input and exposes the current input state as an observable.
- * It tracks pressed keys and updates the state for left, right, and jump actions.
- *
- * @file InputService provides keyboard input management for the game.
- */
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
+/**
+ * InputService handles keyboard input and exposes the current input state as an observable.
+ * It tracks pressed keys and updates the state for left, right, jump and shoot actions.
+ *
+ * @file InputService provides keyboard input management for the game.
+ */
 interface KeyState {
   left: boolean;
   right: boolean;
   jump: boolean;
+  shoot: boolean;
 }
 
 @Injectable({
@@ -22,6 +23,7 @@ export class InputService implements OnDestroy {
     left: false,
     right: false,
     jump: false,
+    shoot: false,
   });
 
   public readonly inputState = this.inputState$.asObservable();
@@ -52,6 +54,7 @@ export class InputService implements OnDestroy {
       left: this.keysPressed.has('a') || this.keysPressed.has('arrowleft'),
       right: this.keysPressed.has('d') || this.keysPressed.has('arrowright'),
       jump: this.keysPressed.has(' ') || this.keysPressed.has('arrowup'),
+      shoot: this.keysPressed.has('x') || this.keysPressed.has('enter'),
     };
     this.inputState$.next(newState);
   }

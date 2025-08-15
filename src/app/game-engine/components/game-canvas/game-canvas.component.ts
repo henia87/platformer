@@ -321,6 +321,18 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
+    // PROJECTILES (above world, below floaters)
+    for (const p of this.gameStateService.projectiles) {
+      this.rendererService.drawRect(
+        this.ctx,
+        p.position.x - cam, // camera parallax
+        p.position.y,
+        p.width,
+        p.height,
+        '#ffd166' // temp color; swap to sprite later
+      );
+    }
+
     const playerImg = this.assetLoaderService.getImage('player');
     this.rendererService.drawImage(
       this.ctx,

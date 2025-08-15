@@ -1,11 +1,13 @@
 import { PhysicsObject } from './physics-object.model';
+import { PLAYER_MAX_HEALTH, PLAYER_MIN_HEALTH } from '../game.config';
 
 type PlayerInit = Partial<PhysicsObject> &
   Partial<Pick<Player, 'health' | 'score'>>;
 
 export class Player extends PhysicsObject {
-  health = 100;
+  health = PLAYER_MAX_HEALTH;
   score = 0;
+  invulnUntilMs = 0;
 
   constructor(init?: PlayerInit) {
     super(init);
@@ -13,5 +15,14 @@ export class Player extends PhysicsObject {
 
     if (init.health !== undefined) this.health = init.health;
     if (init.score !== undefined) this.score = init.score;
+  }
+
+  isInvulnerable(nowMs: number) {
+    return nowMs < this.invulnUntilMs;
+  }
+
+  applyDamage(amount: number) {
+    this.health = Math.max(PLAYER_MIN_HEALTH, this.health - amount);
+    return this.health <= PLAYER_MIN_HEALTH;
   }
 }
