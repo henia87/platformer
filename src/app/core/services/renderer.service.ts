@@ -6,6 +6,7 @@
  * @file RendererService provides methods for rendering graphics on a canvas.
  */
 import { Injectable } from '@angular/core';
+
 import { PLAYER_FALLBACK_COLOR } from '../game.config';
 
 @Injectable({
@@ -27,7 +28,7 @@ export class RendererService {
     y: number,
     width: number,
     height: number,
-    color: string
+    color: string,
   ): void {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, width, height);
@@ -48,7 +49,7 @@ export class RendererService {
     x: number,
     y: number,
     width: number,
-    height: number
+    height: number,
   ): void {
     if (image) {
       ctx.drawImage(image, x, y, width, height);
@@ -82,7 +83,7 @@ export class RendererService {
     destX: number,
     destY: number,
     destWidth: number,
-    destHeight: number
+    destHeight: number,
   ) {
     ctx.drawImage(
       image,
@@ -93,7 +94,7 @@ export class RendererService {
       destX,
       destY,
       destWidth,
-      destHeight // canvas draw area
+      destHeight, // canvas draw area
     );
   }
 
@@ -126,7 +127,7 @@ export class RendererService {
     offsetX: number,
     yFromBottom: number,
     height: number,
-    fallbackColor?: string
+    fallbackColor?: string,
   ): void {
     const y = canvasHeight - yFromBottom - height;
 
@@ -163,7 +164,7 @@ export class RendererService {
     alpha = 1,
     font = 'bold 12px monospace',
     fill = '#fff',
-    align: CanvasTextAlign = 'left'
+    align: CanvasTextAlign = 'left',
   ): void {
     ctx.save();
     ctx.globalAlpha = alpha;

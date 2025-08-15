@@ -26,7 +26,10 @@ export class Vector2 implements Vec2Like {
    * @param x - X coordinate (default 0)
    * @param y - Y coordinate (default 0)
    */
-  constructor(public x = 0, public y = 0) {}
+  constructor(
+    public x = 0,
+    public y = 0,
+  ) {}
 
   // ---- instance ops (mutating) ----
 

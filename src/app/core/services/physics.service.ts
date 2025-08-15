@@ -5,7 +5,7 @@
  * @file PhysicsService provides physics simulation for the game engine.
  */
 import { Injectable } from '@angular/core';
-import { Vector2 } from '../utils/vector2';
+
 import {
   GRAVITY,
   TERMINAL_VELOCITY,
@@ -15,6 +15,7 @@ import {
   PLAYER_DRAG_GROUND,
   PLAYER_MAX_SPEED_X,
 } from '../game.config';
+import { Vector2 } from '../utils/vector2';
 
 @Injectable({ providedIn: 'root' })
 export class PhysicsService {
@@ -41,7 +42,7 @@ export class PhysicsService {
       grounded: boolean;
     },
     input: { left: boolean; right: boolean; jump: boolean },
-    dt: number
+    dt: number,
   ): void {
     const vel = Vector2.from(player.velocity);
 

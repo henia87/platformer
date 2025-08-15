@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+
 import { getCanvasWidth, WORLD_WIDTH } from '../game.config';
 import { Vector2 } from '../utils/vector2';
 

@@ -1,12 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { InputService } from './core/services/input.service';
-import { GameLoopService } from './core/services/game-loop.service';
-import { PhysicsService } from './core/services/physics.service';
-import { AssetLoaderService } from './core/services/asset-loader.service';
-import { CollisionService } from './core/services/collision.service';
-import { CameraService } from './core/services/camera.service';
-import { ParallaxLayersService } from './core/services/parallax-layers.service';
-import { GameStateService } from './state/game-state.service';
+
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -37,6 +30,14 @@ import {
   PROJECTILE_SPAWN_OFFSET_Y,
   PROJECTILE_DAMAGE,
 } from './core/game.config';
+import { AssetLoaderService } from './core/services/asset-loader.service';
+import { CameraService } from './core/services/camera.service';
+import { CollisionService } from './core/services/collision.service';
+import { GameLoopService } from './core/services/game-loop.service';
+import { InputService } from './core/services/input.service';
+import { ParallaxLayersService } from './core/services/parallax-layers.service';
+import { PhysicsService } from './core/services/physics.service';
+import { GameStateService } from './state/game-state.service';
 
 /**
  * AppComponent is the root component that wires up all core game services and manages the main game state.
@@ -123,46 +124,46 @@ export class AppComponent implements OnInit {
     try {
       await this.assetLoaderService.loadImage(
         'player',
-        'assets/sprites/player.png'
+        'assets/sprites/player.png',
       );
 
       // Backgrounds
       await this.assetLoaderService.loadImage('bg-sky', 'assets/bg/bg-sky.png');
       await this.assetLoaderService.loadImage(
         'bg-hills',
-        'assets/bg/bg-hills.png'
+        'assets/bg/bg-hills.png',
       );
       await this.assetLoaderService.loadImage(
         'bg-buildings',
-        'assets/bg/bg-buildings.png'
+        'assets/bg/bg-buildings.png',
       );
       await this.assetLoaderService.loadImage(
         'bg-near',
-        'assets/bg/bg-near.png'
+        'assets/bg/bg-near.png',
       );
 
       // Collectibles
       await this.assetLoaderService.loadImage(
         'big-beer',
-        'assets/sprites/big-beer.png'
+        'assets/sprites/big-beer.png',
       );
       await this.assetLoaderService.loadImage(
         'small-beer',
-        'assets/sprites/small-beer.png'
+        'assets/sprites/small-beer.png',
       );
       await this.assetLoaderService.loadImage(
         'coin',
-        'assets/sprites/coin.png'
+        'assets/sprites/coin.png',
       );
 
       // Enemies
       await this.assetLoaderService.loadImage(
         'punk',
-        'assets/sprites/punk.png'
+        'assets/sprites/punk.png',
       );
       await this.assetLoaderService.loadImage(
         'homeless',
-        'assets/sprites/homeless.png'
+        'assets/sprites/homeless.png',
       );
 
       console.log(
@@ -176,7 +177,7 @@ export class AppComponent implements OnInit {
         this.assetLoaderService.getImage('small-beer'),
         this.assetLoaderService.getImage('coin'),
         this.assetLoaderService.getImage('punk'),
-        this.assetLoaderService.getImage('homeless')
+        this.assetLoaderService.getImage('homeless'),
       );
     } catch (error) {
       console.error('Asset loading failed:', error);
@@ -240,7 +241,7 @@ export class AppComponent implements OnInit {
       this.physicsService.updatePlayer(
         this.player,
         this.inputSnapshot,
-        deltaTime
+        deltaTime,
       );
 
       // ===== COLLISIONS vs ALL PLATFORMS =====
@@ -259,7 +260,7 @@ export class AppComponent implements OnInit {
 
         const isColliding = this.collisionService.checkAABBCollision(
           playerBox,
-          platformBox
+          platformBox,
         );
         if (!isColliding) continue;
 
@@ -322,7 +323,7 @@ export class AppComponent implements OnInit {
             position: this.player.position,
             size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
           },
-          { position: c.position, size: { width: c.width, height: c.height } }
+          { position: c.position, size: { width: c.width, height: c.height } },
         );
         if (hit) {
           c.collected = true;
@@ -332,13 +333,13 @@ export class AppComponent implements OnInit {
             c.type === 'coin'
               ? `+${COIN_VALUE}`
               : c.beerVariant === 'small'
-              ? `+${SMALL_BEER_HP} HP`
-              : `+${BIG_BEER_HP} HP`;
+                ? `+${SMALL_BEER_HP} HP`
+                : `+${BIG_BEER_HP} HP`;
 
           this.gameStateService.spawnFloater(
             c.position.x,
             c.position.y - 4,
-            label
+            label,
           );
 
           if (c.type === 'coin') {
@@ -348,7 +349,7 @@ export class AppComponent implements OnInit {
               c.beerVariant === 'small' ? SMALL_BEER_HP : BIG_BEER_HP;
             this.player.health = Math.min(
               PLAYER_MAX_HEALTH,
-              this.player.health + heal
+              this.player.health + heal,
             );
           }
           // TODO: SFX/particles
@@ -371,7 +372,7 @@ export class AppComponent implements OnInit {
           0,
           PROJECTILE_WIDTH,
           PROJECTILE_HEIGHT,
-          PROJECTILE_TTL_MS
+          PROJECTILE_TTL_MS,
         );
 
         this.fireReadyAtMs = nowMs + PROJECTILE_FIRE_COOLDOWN_MS;
@@ -395,7 +396,10 @@ export class AppComponent implements OnInit {
               position: p.position,
               size: { width: p.width, height: p.height },
             },
-            { position: e.position, size: { width: e.width, height: e.height } }
+            {
+              position: e.position,
+              size: { width: e.width, height: e.height },
+            },
           );
           if (!hit) continue;
 
@@ -406,7 +410,7 @@ export class AppComponent implements OnInit {
           this.gameStateService.spawnFloater(
             e.position.x + e.width / 2,
             e.position.y - 6,
-            `⚔️ -${PROJECTILE_DAMAGE}`
+            `⚔️ -${PROJECTILE_DAMAGE}`,
           );
 
           // consume projectile
@@ -417,7 +421,7 @@ export class AppComponent implements OnInit {
             this.gameStateService.spawnFloater(
               e.position.x + e.width / 2,
               e.position.y - 16,
-              '💀'
+              '💀',
             );
             this.enemies.splice(ei, 1);
           }
@@ -436,7 +440,7 @@ export class AppComponent implements OnInit {
             position: this.player.position,
             size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
           },
-          { position: e.position, size: { width: e.width, height: e.height } }
+          { position: e.position, size: { width: e.width, height: e.height } },
         );
         if (!hit) continue;
 
@@ -486,7 +490,7 @@ export class AppComponent implements OnInit {
           this.gameStateService.spawnFloater(
             ex + e.width / 2,
             ey - 6,
-            `⚔️ -${stompDmg}`
+            `⚔️ -${stompDmg}`,
           );
 
           // Player bounce
@@ -511,14 +515,14 @@ export class AppComponent implements OnInit {
             const dmg = e.damage; // per-enemy damage
             this.player.health = Math.max(
               PLAYER_MIN_HEALTH,
-              this.player.health - dmg
+              this.player.health - dmg,
             );
 
             // Player damage floater
             this.gameStateService.spawnFloater(
               px + PLAYER_WIDTH / 2,
               py - 6,
-              `🩸 -${dmg}`
+              `🩸 -${dmg}`,
             );
 
             // Knockback away from enemy

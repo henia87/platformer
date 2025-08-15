@@ -1,5 +1,6 @@
-import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NgModule } from '@angular/core';
+
 import { AssetLoaderService } from './services/asset-loader.service';
 import { CollisionService } from './services/collision.service';
 import { GameLoopService } from './services/game-loop.service';
