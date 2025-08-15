@@ -19,11 +19,8 @@ import {
   Input,
   AfterViewInit,
 } from '@angular/core';
-import { GameLoopService } from '../../../core/services/game-loop.service';
 import { Subscription } from 'rxjs';
-import { AssetLoaderService } from '../../../core/services/asset-loader.service';
-import { RendererService } from '../../../core/services/renderer.service';
-import { GameStateService } from '../../../state/game-state.service';
+
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -37,10 +34,14 @@ import {
   LABEL_TTL_SEC,
   LABEL_VY_PX_PER_SEC,
 } from '../../../core/game.config';
-import { Vector2 } from '../../../core/utils/vector2';
-import { Platform } from '../../../core/models/platform.model';
 import { Collectible } from '../../../core/models/collectible.model';
 import { Enemy } from '../../../core/models/enemy.model';
+import { Platform } from '../../../core/models/platform.model';
+import { AssetLoaderService } from '../../../core/services/asset-loader.service';
+import { GameLoopService } from '../../../core/services/game-loop.service';
+import { RendererService } from '../../../core/services/renderer.service';
+import { Vector2 } from '../../../core/utils/vector2';
+import { GameStateService } from '../../../state/game-state.service';
 @Component({
   selector: 'app-game-canvas',
   standalone: false,
@@ -219,13 +220,13 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const cam = Vector2.lerp(
       { x: this.snapshotPrev.cam, y: 0 },
       { x: this.snapshot.cam, y: 0 },
-      alpha
+      alpha,
     ).x;
 
     const p = Vector2.lerp(
       { x: this.snapshotPrev.playerX, y: this.snapshotPrev.playerY },
       { x: this.snapshot.playerX, y: this.snapshot.playerY },
-      alpha
+      alpha,
     );
     const playerX = p.x;
     const playerY = p.y;
@@ -250,7 +251,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         eased,
         layer.yFromBottom || 0,
         layer.height,
-        layer.color
+        layer.color,
       );
     }
 
@@ -262,7 +263,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         plat.position.y,
         plat.width,
         plat.height,
-        'gray'
+        'gray',
       );
     }
 
@@ -301,7 +302,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         c.position.x - cam,
         c.position.y - rise,
         c.width,
-        c.height
+        c.height,
       );
     }
 
@@ -317,7 +318,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         e.position.x - cam,
         e.position.y,
         w,
-        h
+        h,
       );
     }
 
@@ -329,7 +330,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         p.position.y,
         p.width,
         p.height,
-        '#ffd166' // temp color; swap to sprite later
+        '#ffd166', // temp color; swap to sprite later
       );
     }
 
@@ -340,7 +341,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       playerX - cam,
       playerY,
       PLAYER_WIDTH,
-      PLAYER_HEIGHT
+      PLAYER_HEIGHT,
     );
 
     for (const f of this.gameStateService.floaters) {
@@ -358,7 +359,7 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         a,
         'bold 12px monospace',
         '#ffd54a',
-        'center'
+        'center',
       );
     }
   }

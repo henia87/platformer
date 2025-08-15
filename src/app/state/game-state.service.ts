@@ -1,9 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Player } from '../core/models/player.model';
-import { Platform } from '../core/models/platform.model';
-import { Collectible } from '../core/models/collectible.model';
-import { Enemy } from '../core/models/enemy.model';
-import { FloatingText } from '../core/models/floating-text.model';
+
 import {
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
@@ -12,6 +8,11 @@ import {
   ENEMY_HEIGHT,
   CANVAS_HEIGHT,
 } from '../core/game.config';
+import { Collectible } from '../core/models/collectible.model';
+import { Enemy } from '../core/models/enemy.model';
+import { FloatingText } from '../core/models/floating-text.model';
+import { Platform } from '../core/models/platform.model';
+import { Player } from '../core/models/player.model';
 import { Projectile } from '../core/models/projectile.model';
 import { Vector2 } from '../core/utils/vector2';
 
@@ -105,7 +106,7 @@ export class GameStateService {
     vy: number,
     w: number,
     h: number,
-    ttlMs: number
+    ttlMs: number,
   ) {
     this.projectiles.push(
       new Projectile({
@@ -114,7 +115,7 @@ export class GameStateService {
         width: w,
         height: h,
         ttlMs,
-      })
+      }),
     );
   }
 

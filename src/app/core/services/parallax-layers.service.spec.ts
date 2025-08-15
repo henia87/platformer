@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+
 import { ParallaxLayersService } from './parallax-layers.service';
 
 describe('ParallaxLayersService', () => {

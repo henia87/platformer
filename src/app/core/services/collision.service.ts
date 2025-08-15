@@ -4,6 +4,7 @@
  * @file CollisionService provides collision detection utilities for the game engine.
  */
 import { Injectable } from '@angular/core';
+
 import { AABB } from '../models/aabb.model';
 
 @Injectable({
