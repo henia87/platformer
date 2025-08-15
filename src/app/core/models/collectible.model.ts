@@ -6,12 +6,6 @@ import {
   BEER_HEIGHT,
 } from '../game.config';
 
-export interface FloatingText {
-  text: string;
-  x: number;
-  y0: number;
-  bornAt: number;
-}
 export type CollectibleType = 'coin' | 'beer';
 export type BeerVariant = 'big' | 'small';
 

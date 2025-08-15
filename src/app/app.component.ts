@@ -17,21 +17,31 @@ import {
   WORLD_WIDTH,
   PICKUP_FADE_TIME,
   LABEL_TTL_SEC,
+  SMALL_BEER_HP,
+  BIG_BEER_HP,
+  PLAYER_MAX_HEALTH,
+  COIN_VALUE,
+  PLAYER_MIN_HEALTH,
+  PLAYER_IFRAME_MS,
+  STOMP_BOUNCE_VY,
+  STOMP_VERTICAL_TOLERANCE,
+  PLAYER_DAMAGE_AGAINST_PUNK,
+  PLAYER_DAMAGE_AGAINST_HOMELESS,
+  SIDE_HIT_BAND_PX,
+  PROJECTILE_WIDTH,
+  PROJECTILE_HEIGHT,
+  PROJECTILE_SPEED,
+  PROJECTILE_TTL_MS,
+  PROJECTILE_FIRE_COOLDOWN_MS,
+  PROJECTILE_SPAWN_OFFSET_X,
+  PROJECTILE_SPAWN_OFFSET_Y,
+  PROJECTILE_DAMAGE,
 } from './core/game.config';
 
 /**
  * AppComponent is the root component that wires up all core game services and manages the main game state.
  * It handles player input, physics, collisions, camera, asset loading and the main game loop.
  * This is where the game world, player and platform are initialized and updated each frame.
- *
- * Injected services:
- * - InputService: Handles keyboard input and exposes input state.
- * - GameLoopService: Provides the main update and render loop.
- * - PhysicsService: Updates player physics and movement.
- * - AssetLoaderService: Loads and caches game assets.
- * - CollisionService: Detects collisions between game objects.
- * - CameraService: Manages camera position and viewport.
- * - ParallaxLayersService: Provides parallax background layers.
  *
  * Main properties:
  * - player: The player object (position, velocity, acceleration, grounded).
@@ -59,7 +69,12 @@ export class AppComponent implements OnInit {
   private parallaxLayersService = inject(ParallaxLayersService);
   private gameStateService = inject(GameStateService);
 
-  private inputSnapshot = { left: false, right: false, jump: false };
+  private inputSnapshot = {
+    left: false,
+    right: false,
+    jump: false,
+    shoot: false,
+  };
 
   /** Current game state snapshot for rendering. */
   snapshot = { cam: 0, playerX: 0, playerY: 0 };
@@ -75,6 +90,10 @@ export class AppComponent implements OnInit {
   collectibles = this.gameStateService.collectibles;
   enemies = this.gameStateService.enemies;
   floaters = this.gameStateService.floaters;
+  projectiles = this.gameStateService.projectiles;
+
+  private facing = 1;
+  private fireReadyAtMs = 0;
 
   /** Coyote time counter (seconds). Allows jumping shortly after leaving a platform. */
   private coyoteTime = 0;
@@ -169,7 +188,7 @@ export class AppComponent implements OnInit {
 
     /** First-frame player placement */
     this.player.position.x = 0;
-    this.player.position.y = CANVAS_HEIGHT - PLAYER_HEIGHT;
+    this.player.position.y = CANVAS_HEIGHT - PLAYER_HEIGHT - 5;
     this.player.grounded = true;
 
     /** Initial camera and snapshot */
@@ -189,14 +208,21 @@ export class AppComponent implements OnInit {
     this.inputService.inputState.subscribe((state) => {
       this.inputSnapshot = state;
       this.player.acceleration.x = 0;
-      if (state.left) this.player.acceleration.x = -PLAYER_ACCELERATION;
-      if (state.right) this.player.acceleration.x = PLAYER_ACCELERATION;
+      if (state.left) {
+        this.player.acceleration.x = -PLAYER_ACCELERATION;
+        this.facing = -1;
+      }
+      if (state.right) {
+        this.player.acceleration.x = PLAYER_ACCELERATION;
+        this.facing = 1;
+      }
       if (state.jump) this.jumpBuffer = this.JUMP_BUFFER_MAX;
     });
 
     /** Subscription to game loop updates */
     this.gameLoopService.update$.subscribe((dtSec) => {
       const deltaTime = dtSec; // fixed 1/60s
+      const nowMs = performance.now();
 
       // Coyote / Jump buffer
       if (this.jumpBuffer > 0) this.jumpBuffer -= deltaTime;
@@ -266,7 +292,7 @@ export class AppComponent implements OnInit {
         this.player.position.y = 0;
         this.player.velocity.y = 0;
       }
-      const maxY = CANVAS_HEIGHT - PLAYER_HEIGHT;
+      const maxY = CANVAS_HEIGHT - PLAYER_HEIGHT - 5;
       if (this.player.position.y > maxY) {
         this.player.position.y = maxY;
         this.player.velocity.y = 0;
@@ -304,10 +330,10 @@ export class AppComponent implements OnInit {
 
           const label =
             c.type === 'coin'
-              ? '+1'
+              ? `+${COIN_VALUE}`
               : c.beerVariant === 'small'
-              ? '+2 HP'
-              : '+5 HP';
+              ? `+${SMALL_BEER_HP} HP`
+              : `+${BIG_BEER_HP} HP`;
 
           this.gameStateService.spawnFloater(
             c.position.x,
@@ -316,17 +342,95 @@ export class AppComponent implements OnInit {
           );
 
           if (c.type === 'coin') {
-            this.player.score += 1;
+            this.player.score += COIN_VALUE;
           } else {
-            const heal = c.beerVariant === 'small' ? 2 : 5;
-            this.player.health = Math.min(99, this.player.health + heal);
+            const heal =
+              c.beerVariant === 'small' ? SMALL_BEER_HP : BIG_BEER_HP;
+            this.player.health = Math.min(
+              PLAYER_MAX_HEALTH,
+              this.player.health + heal
+            );
           }
           // TODO: SFX/particles
         }
       }
 
-      // --- Enemy collision (hurt player) ---
-      for (const e of this.enemies) {
+      if (this.inputSnapshot.shoot && nowMs >= this.fireReadyAtMs) {
+        const dir = this.facing >= 0 ? 1 : -1;
+        const spawnX =
+          this.player.position.x +
+          (dir > 0 ? PLAYER_WIDTH : 0) +
+          dir * PROJECTILE_SPAWN_OFFSET_X;
+        const spawnY = this.player.position.y + PROJECTILE_SPAWN_OFFSET_Y;
+        const vx = dir * PROJECTILE_SPEED;
+
+        this.gameStateService.spawnProjectile(
+          spawnX,
+          spawnY,
+          vx,
+          0,
+          PROJECTILE_WIDTH,
+          PROJECTILE_HEIGHT,
+          PROJECTILE_TTL_MS
+        );
+
+        this.fireReadyAtMs = nowMs + PROJECTILE_FIRE_COOLDOWN_MS;
+      }
+
+      for (const p of this.projectiles) {
+        p.position.x += p.velocity.x * deltaTime;
+        p.position.y += p.velocity.y * deltaTime;
+      }
+
+      // --- Projectiles hit enemies ---
+      for (let pi = this.projectiles.length - 1; pi >= 0; pi--) {
+        const p = this.projectiles[pi];
+
+        for (let ei = this.enemies.length - 1; ei >= 0; ei--) {
+          const e = this.enemies[ei];
+          if (!e.alive) continue;
+
+          const hit = this.collisionService.checkAABBCollision(
+            {
+              position: p.position,
+              size: { width: p.width, height: p.height },
+            },
+            { position: e.position, size: { width: e.width, height: e.height } }
+          );
+          if (!hit) continue;
+
+          // apply projectile damage
+          const died = e.takeDamage(PROJECTILE_DAMAGE);
+
+          // enemy damage floater
+          this.gameStateService.spawnFloater(
+            e.position.x + e.width / 2,
+            e.position.y - 6,
+            `⚔️ -${PROJECTILE_DAMAGE}`
+          );
+
+          // consume projectile
+          this.projectiles.splice(pi, 1);
+
+          if (died) {
+            this.player.score = (this.player.score ?? 0) + 50;
+            this.gameStateService.spawnFloater(
+              e.position.x + e.width / 2,
+              e.position.y - 16,
+              '💀'
+            );
+            this.enemies.splice(ei, 1);
+          }
+          break; // stop checking other enemies for this projectile
+        }
+      }
+
+      // Enemy collision: stomp vs side-only hit + i-frames + clearer floaters
+      for (let i = this.enemies.length - 1; i >= 0; i--) {
+        const e = this.enemies[i];
+        if (!e.alive) continue;
+
+        // AABB test
         const hit = this.collisionService.checkAABBCollision(
           {
             position: this.player.position,
@@ -334,20 +438,106 @@ export class AppComponent implements OnInit {
           },
           { position: e.position, size: { width: e.width, height: e.height } }
         );
-        if (hit) {
-          const dmg = e.type === 'punk' ? 15 : 10; // per your spec
-          this.player.health = Math.max(0, this.player.health - dmg);
+        if (!hit) continue;
 
-          // small knockback
-          const kb = 140;
-          this.player.velocity.x =
-            this.player.position.x < e.position.x ? -kb : kb;
-          this.player.velocity.y = -120;
+        // --- Compute collision context ---
+        const px = this.player.position.x;
+        const py = this.player.position.y;
+        const ex = e.position.x;
+        const ey = e.position.y;
+
+        const playerCenterX = px + PLAYER_WIDTH * 0.5;
+        const playerCenterY = py + PLAYER_HEIGHT * 0.5;
+        const enemyCenterX = ex + e.width * 0.5;
+        const enemyCenterY = ey + e.height * 0.5;
+
+        // penetration depths (Manhattan-style AABB)
+        const dx = playerCenterX - enemyCenterX;
+        const dy = playerCenterY - enemyCenterY;
+        const penX = PLAYER_WIDTH * 0.5 + e.width * 0.5 - Math.abs(dx);
+        const penY = PLAYER_HEIGHT * 0.5 + e.height * 0.5 - Math.abs(dy);
+
+        // "True lateral" if we overlap less along X than Y (classic AABB resolution heuristic)
+        const isHorizontalHit = penX < penY;
+
+        // Shoulder band: avoid counting near-top grazes as lateral hits
+        const bandTop = ey + SIDE_HIT_BAND_PX;
+        const bandBottom = ey + e.height - SIDE_HIT_BAND_PX;
+        const inSideBand =
+          playerCenterY >= bandTop && playerCenterY <= bandBottom;
+
+        // Stomp detection (from above with some tolerance)
+        const playerFeet = py + PLAYER_HEIGHT;
+        const enemyTop = ey;
+        const isFalling = this.player.velocity.y > 0;
+        const isFromAbove =
+          isFalling && playerFeet - enemyTop <= STOMP_VERTICAL_TOLERANCE;
+
+        // --- Prioritize stomp if it's a from-above contact ---
+        if (isFromAbove) {
+          const stompDmg =
+            e.type === 'punk'
+              ? PLAYER_DAMAGE_AGAINST_PUNK
+              : PLAYER_DAMAGE_AGAINST_HOMELESS;
+
+          const died = e.takeDamage(stompDmg);
+
+          // Enemy damage floater
+          this.gameStateService.spawnFloater(
+            ex + e.width / 2,
+            ey - 6,
+            `⚔️ -${stompDmg}`
+          );
+
+          // Player bounce
+          this.player.velocity.y = -STOMP_BOUNCE_VY;
           this.player.grounded = false;
+
+          if (died) {
+            // Score + skull
+            this.player.score = (this.player.score ?? 0) + 50;
+            this.gameStateService.spawnFloater(ex + e.width / 2, ey - 16, '💀');
+            this.enemies.splice(i, 1);
+          }
+
+          // Stomp never damages the player
+          continue;
         }
+
+        // --- Only damage player on true side hits (front/back), inside the side band ---
+        if (isHorizontalHit && inSideBand) {
+          // respect i-frames
+          if (nowMs >= (this.player.invulnUntilMs ?? 0)) {
+            const dmg = e.damage; // per-enemy damage
+            this.player.health = Math.max(
+              PLAYER_MIN_HEALTH,
+              this.player.health - dmg
+            );
+
+            // Player damage floater
+            this.gameStateService.spawnFloater(
+              px + PLAYER_WIDTH / 2,
+              py - 6,
+              `🩸 -${dmg}`
+            );
+
+            // Knockback away from enemy
+            const kb = 140;
+            this.player.velocity.x = px < ex ? -kb : kb;
+            this.player.velocity.y = -120;
+            this.player.grounded = false;
+
+            // start i-frames
+            this.player.invulnUntilMs = nowMs + PLAYER_IFRAME_MS;
+          }
+
+          continue;
+        }
+
+        // (possibly head-bump behavior)
       }
 
-      // fade-out timer for collected items
+      // Fade-out timer for collected items
       for (const c of this.collectibles) {
         if (c.collected && c.fade > 0) {
           c.fade -= deltaTime;
@@ -355,8 +545,8 @@ export class AppComponent implements OnInit {
         }
       }
 
-      const now = performance.now();
-      this.gameStateService.pruneFloaters(now, LABEL_TTL_SEC * 1000);
+      this.gameStateService.pruneFloaters(nowMs, LABEL_TTL_SEC * 1000);
+      this.gameStateService.pruneProjectiles(nowMs, deltaTime * 1000);
 
       /** Camera */
       const playerCenterX = this.player.position.x + PLAYER_WIDTH / 2;
@@ -373,7 +563,7 @@ export class AppComponent implements OnInit {
       this.snapshot.playerX = this.player.position.x;
       this.snapshot.playerY = this.player.position.y;
 
-      this.lastUpdateAtMs = performance.now();
+      this.lastUpdateAtMs = nowMs;
     });
 
     this.loadAssets();

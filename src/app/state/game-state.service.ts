@@ -3,7 +3,7 @@ import { Player } from '../core/models/player.model';
 import { Platform } from '../core/models/platform.model';
 import { Collectible } from '../core/models/collectible.model';
 import { Enemy } from '../core/models/enemy.model';
-import { FloatingText } from '../core/models/collectible.model';
+import { FloatingText } from '../core/models/floating-text.model';
 import {
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
@@ -12,7 +12,10 @@ import {
   ENEMY_HEIGHT,
   CANVAS_HEIGHT,
 } from '../core/game.config';
+import { Projectile } from '../core/models/projectile.model';
+import { Vector2 } from '../core/utils/vector2';
 
+/** Manages the game state, including player, platforms, collectibles, enemies, and floating text. */
 @Injectable({
   providedIn: 'root',
 })
@@ -90,6 +93,36 @@ export class GameStateService {
       if (nowMs - this.floaters[i].bornAt >= ttlMs) {
         this.floaters.splice(i, 1);
       }
+    }
+  }
+
+  projectiles: Projectile[] = [];
+
+  spawnProjectile(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    w: number,
+    h: number,
+    ttlMs: number
+  ) {
+    this.projectiles.push(
+      new Projectile({
+        position: new Vector2(x, y),
+        velocity: new Vector2(vx, vy),
+        width: w,
+        height: h,
+        ttlMs,
+      })
+    );
+  }
+
+  pruneProjectiles(nowMs: number, dtMs: number) {
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const p = this.projectiles[i];
+      p.ttlMs -= dtMs;
+      if (p.ttlMs <= 0) this.projectiles.splice(i, 1);
     }
   }
 }
