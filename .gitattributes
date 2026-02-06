@@ -1,1 +1,35 @@
+## Line ending normalization
+##
+## Goal: keep the repository consistent (LF) across platforms, while allowing
+## Windows-native scripts to stay CRLF.
+
+# Normalize all detected text files to LF in the repo.
+* text=auto eol=lf
+
+# Explicit: keep Husky scripts LF (shell scripts).
 .husky/* text eol=lf
+
+# Windows scripts should remain CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Common binary assets (do not attempt EOL conversion).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.bmp binary
+
+*.mp3 binary
+*.wav binary
+*.ogg binary
+
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+*.pdf binary
