@@ -408,7 +408,8 @@ export class AppComponent implements OnInit {
           if (!hit) continue;
 
           // apply projectile damage
-          const died = e.takeDamage(PROJECTILE_DAMAGE);
+          const newHealth = e.takeDamage(PROJECTILE_DAMAGE);
+          const died = newHealth === 0;
 
           // enemy damage floater
           this.gameStateService.spawnFloater(
@@ -488,7 +489,8 @@ export class AppComponent implements OnInit {
               ? PLAYER_DAMAGE_AGAINST_PUNK
               : PLAYER_DAMAGE_AGAINST_HOMELESS;
 
-          const died = e.takeDamage(stompDmg);
+          const newHealth = e.takeDamage(stompDmg);
+          const died = newHealth === 0;
 
           // Enemy damage floater
           this.gameStateService.spawnFloater(

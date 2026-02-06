@@ -17,12 +17,12 @@ export class Player extends PhysicsObject {
     if (init.score !== undefined) this.score = init.score;
   }
 
-  isInvulnerable(nowMs: number) {
+  isInvulnerable(nowMs: number): boolean {
     return nowMs < this.invulnUntilMs;
   }
 
-  applyDamage(amount: number) {
+  applyDamage(amount: number): number {
     this.health = Math.max(PLAYER_MIN_HEALTH, this.health - amount);
-    return this.health <= PLAYER_MIN_HEALTH;
+    return this.health;
   }
 }

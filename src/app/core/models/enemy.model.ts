@@ -43,9 +43,9 @@ export class Enemy extends PhysicsObject {
     }
   }
 
-  takeDamage(amount: number) {
+  takeDamage(amount: number): number {
     this.health = Math.max(0, this.health - amount);
     this.alive = this.health > 0;
-    return !this.alive; // true if died
+    return this.health;
   }
 }
