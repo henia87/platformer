@@ -38,21 +38,45 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## Running unit tests
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+To execute unit tests with Jest, use the following command:
 
 ```bash
-ng test
+npm run test
+```
+
+For test coverage:
+
+```bash
+npm run test:all
 ```
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+This project uses **Playwright** for comprehensive E2E testing. The test suite includes:
+
+- Game canvas rendering tests
+- Player controls and input tests
+- HUD display and game mechanics tests
+
+To run E2E tests:
 
 ```bash
-ng e2e
+npm run test:e2e
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+For interactive test development (recommended):
+
+```bash
+npm run test:e2e:ui
+```
+
+Additional test commands:
+
+- `npm run test:e2e:headed` - Run with visible browser
+- `npm run test:e2e:debug` - Debug mode
+- `npm run playwright:report` - View test report
+
+See [PLAYWRIGHT_SETUP.md](PLAYWRIGHT_SETUP.md) for detailed testing documentation.
 
 ## Additional Resources
 
