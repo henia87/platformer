@@ -116,6 +116,30 @@ export class AppComponent implements OnInit {
   /** Parallax background layers. */
   layers = this.parallaxLayersService.getLayers();
 
+  private handleProjectileFiring(nowMs: number): void {
+    if (!this.inputSnapshot.shoot || nowMs < this.fireReadyAtMs) return;
+
+    const dir = this.facing >= 0 ? 1 : -1;
+    const spawnX =
+      this.player.position.x +
+      (dir > 0 ? PLAYER_WIDTH : 0) +
+      dir * PROJECTILE_SPAWN_OFFSET_X;
+    const spawnY = this.player.position.y + PROJECTILE_SPAWN_OFFSET_Y;
+    const vx = dir * PROJECTILE_SPEED;
+
+    this.gameStateService.spawnProjectile(
+      spawnX,
+      spawnY,
+      vx,
+      0,
+      PROJECTILE_WIDTH,
+      PROJECTILE_HEIGHT,
+      PROJECTILE_TTL_MS,
+    );
+
+    this.fireReadyAtMs = nowMs + PROJECTILE_FIRE_COOLDOWN_MS;
+  }
+
   /**
    * Loads all required image assets for the game and logs the results.
    * @private
@@ -356,27 +380,7 @@ export class AppComponent implements OnInit {
         }
       }
 
-      if (this.inputSnapshot.shoot && nowMs >= this.fireReadyAtMs) {
-        const dir = this.facing >= 0 ? 1 : -1;
-        const spawnX =
-          this.player.position.x +
-          (dir > 0 ? PLAYER_WIDTH : 0) +
-          dir * PROJECTILE_SPAWN_OFFSET_X;
-        const spawnY = this.player.position.y + PROJECTILE_SPAWN_OFFSET_Y;
-        const vx = dir * PROJECTILE_SPEED;
-
-        this.gameStateService.spawnProjectile(
-          spawnX,
-          spawnY,
-          vx,
-          0,
-          PROJECTILE_WIDTH,
-          PROJECTILE_HEIGHT,
-          PROJECTILE_TTL_MS,
-        );
-
-        this.fireReadyAtMs = nowMs + PROJECTILE_FIRE_COOLDOWN_MS;
-      }
+      this.handleProjectileFiring(nowMs);
 
       for (const p of this.projectiles) {
         p.position.x += p.velocity.x * deltaTime;
