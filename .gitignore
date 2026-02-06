@@ -47,3 +47,7 @@ Thumbs.db
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# GitHub
+.github/skills/
+.github/copilot-instructions.md
