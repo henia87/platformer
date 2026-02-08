@@ -111,7 +111,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    * Subscription to the game loop's render observable.
    */
   private frameSub?: Subscription;
-  private x = 0;
 
   canvasWidth = CANVAS_WIDTH;
   canvasHeight = CANVAS_HEIGHT;
@@ -159,7 +158,11 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.error('Failed to get 2D rendering context');
+      return;
+    }
     this.ctx = ctx;
 
     // Logical size
@@ -194,15 +197,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   ngOnDestroy(): void {
     this.frameSub?.unsubscribe();
-  }
-
-  /**
-   * Updates the game state for the current frame.
-   * @param dt - Delta time in seconds since the last frame.
-   */
-  update(dt: number) {
-    this.x += 100 * dt; // Move 100px/sec
-    if (this.x > 300) this.x = 0;
   }
 
   /**
@@ -295,15 +289,6 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.ctx.globalAlpha = alpha;
       this.rendererService.drawImage(this.ctx, img, drawX, drawY, drawW, drawH);
       this.ctx.globalAlpha = prevAlpha;
-
-      this.rendererService.drawImage(
-        this.ctx,
-        img,
-        c.position.x - cam,
-        c.position.y - rise,
-        c.width,
-        c.height,
-      );
     }
 
     // ENEMIES
