@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 
 import {
   CANVAS_WIDTH,
@@ -60,7 +61,7 @@ import { GameStateService } from './state/game-state.service';
   standalone: false,
   styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   private inputService = inject(InputService);
   private gameLoopService = inject(GameLoopService);
   private physicsService = inject(PhysicsService);
@@ -76,6 +77,9 @@ export class AppComponent implements OnInit {
     jump: false,
     shoot: false,
   };
+
+  private inputSub?: Subscription;
+  private updateSub?: Subscription;
 
   /** Current game state snapshot for rendering. */
   snapshot = { cam: 0, playerX: 0, playerY: 0 };
@@ -230,7 +234,7 @@ export class AppComponent implements OnInit {
     this.gameLoopService.start();
 
     /** Input service */
-    this.inputService.inputState.subscribe((state) => {
+    this.inputSub = this.inputService.inputState.subscribe((state) => {
       this.inputSnapshot = state;
       this.player.acceleration.x = 0;
       if (state.left) {
@@ -245,7 +249,7 @@ export class AppComponent implements OnInit {
     });
 
     /** Subscription to game loop updates */
-    this.gameLoopService.update$.subscribe((dtSec) => {
+    this.updateSub = this.gameLoopService.update$.subscribe((dtSec) => {
       const deltaTime = dtSec; // fixed 1/60s
       const nowMs = performance.now();
 
@@ -577,5 +581,11 @@ export class AppComponent implements OnInit {
     });
 
     this.loadAssets();
+  }
+
+  ngOnDestroy(): void {
+    this.inputSub?.unsubscribe();
+    this.updateSub?.unsubscribe();
+    this.gameLoopService.stop();
   }
 }
