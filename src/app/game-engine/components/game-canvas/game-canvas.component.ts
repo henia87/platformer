@@ -13,7 +13,6 @@ import {
   Component,
   ElementRef,
   OnDestroy,
-  OnInit,
   ViewChild,
   inject,
   Input,
@@ -48,7 +47,7 @@ import { GameStateService } from '../../../state/game-state.service';
   templateUrl: './game-canvas.component.html',
   styleUrl: './game-canvas.component.scss',
 })
-export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
+export class GameCanvasComponent implements AfterViewInit, OnDestroy {
   /**
    * Array of parallax background layers to render.
    * @input
@@ -180,20 +179,15 @@ export class GameCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Map logical coordinates -> physical pixels
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  }
 
-  /**
-   * Initializes the game canvas component and subscribes to the game loop.
-   * Starts rendering on each frame.
-   */
-  ngOnInit(): void {
+    // Subscribe to render loop only after ctx is successfully initialized
     this.frameSub = this.gameLoop.render$.subscribe(() => {
       this.render();
     });
   }
 
   /**
-   * Cleans up the game loop subscription when the component is destroyed.
+   * Initializes the game canvas component.
    */
   ngOnDestroy(): void {
     this.frameSub?.unsubscribe();

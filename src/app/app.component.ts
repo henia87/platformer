@@ -586,5 +586,6 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.inputSub?.unsubscribe();
     this.updateSub?.unsubscribe();
+    this.gameLoopService.stop();
   }
 }
