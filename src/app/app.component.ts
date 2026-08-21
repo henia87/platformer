@@ -15,13 +15,6 @@ import {
   BIG_BEER_HP,
   PLAYER_MAX_HEALTH,
   COIN_VALUE,
-  PROJECTILE_WIDTH,
-  PROJECTILE_HEIGHT,
-  PROJECTILE_SPEED,
-  PROJECTILE_TTL_MS,
-  PROJECTILE_FIRE_COOLDOWN_MS,
-  PROJECTILE_SPAWN_OFFSET_X,
-  PROJECTILE_SPAWN_OFFSET_Y,
 } from './core/game.config';
 import { AssetLoaderService } from './core/services/asset-loader.service';
 import { CameraService } from './core/services/camera.service';
@@ -31,6 +24,7 @@ import { GameLoopService } from './core/services/game-loop.service';
 import { InputService } from './core/services/input.service';
 import { ParallaxLayersService } from './core/services/parallax-layers.service';
 import { PhysicsService } from './core/services/physics.service';
+import { ProjectileService } from './core/services/projectile.service';
 import { GameStateService } from './state/game-state.service';
 
 /**
@@ -61,6 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private assetLoaderService = inject(AssetLoaderService);
   private collisionService = inject(CollisionService);
   private combatService = inject(CombatService);
+  private projectileService = inject(ProjectileService);
   private cameraService = inject(CameraService);
   private parallaxLayersService = inject(ParallaxLayersService);
   private gameStateService = inject(GameStateService);
@@ -91,9 +86,6 @@ export class AppComponent implements OnInit, OnDestroy {
   floaters = this.gameStateService.floaters;
   projectiles = this.gameStateService.projectiles;
 
-  private facing = 1;
-  private fireReadyAtMs = 0;
-
   /** Coyote time counter (seconds). Allows jumping shortly after leaving a platform. */
   private coyoteTime = 0;
   /** Maximum coyote time allowed (seconds). */
@@ -113,30 +105,6 @@ export class AppComponent implements OnInit, OnDestroy {
   cameraX = 0;
   /** Parallax background layers. */
   layers = this.parallaxLayersService.getLayers();
-
-  private handleProjectileFiring(nowMs: number): void {
-    if (!this.inputSnapshot.shoot || nowMs < this.fireReadyAtMs) return;
-
-    const dir = this.facing >= 0 ? 1 : -1;
-    const spawnX =
-      this.player.position.x +
-      (dir > 0 ? PLAYER_WIDTH : 0) +
-      dir * PROJECTILE_SPAWN_OFFSET_X;
-    const spawnY = this.player.position.y + PROJECTILE_SPAWN_OFFSET_Y;
-    const vx = dir * PROJECTILE_SPEED;
-
-    this.gameStateService.spawnProjectile(
-      spawnX,
-      spawnY,
-      vx,
-      0,
-      PROJECTILE_WIDTH,
-      PROJECTILE_HEIGHT,
-      PROJECTILE_TTL_MS,
-    );
-
-    this.fireReadyAtMs = nowMs + PROJECTILE_FIRE_COOLDOWN_MS;
-  }
 
   /**
    * Loads all required image assets for the game and logs the results.
@@ -233,11 +201,9 @@ export class AppComponent implements OnInit, OnDestroy {
       this.player.acceleration.x = 0;
       if (state.left) {
         this.player.acceleration.x = -PLAYER_ACCELERATION;
-        this.facing = -1;
       }
       if (state.right) {
         this.player.acceleration.x = PLAYER_ACCELERATION;
-        this.facing = 1;
       }
       if (state.jump) this.jumpBuffer = this.JUMP_BUFFER_MAX;
     });
@@ -378,18 +344,14 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
 
-      this.handleProjectileFiring(nowMs);
-
-      for (const p of this.projectiles) {
-        p.position.x += p.velocity.x * deltaTime;
-        p.position.y += p.velocity.y * deltaTime;
-      }
-
-      // --- Projectiles hit enemies ---
-      for (const ev of this.combatService.handleProjectileEnemyCollisions(
+      // --- Weapon: facing, firing, movement, and projectile-vs-enemy hits ---
+      for (const ev of this.projectileService.update(
         this.projectiles,
-        this.enemies,
         this.player,
+        this.enemies,
+        this.inputSnapshot,
+        deltaTime,
+        nowMs,
       )) {
         this.gameStateService.spawnFloater(ev.x, ev.y, ev.text);
       }
