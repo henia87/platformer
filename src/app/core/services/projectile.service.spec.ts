@@ -45,7 +45,14 @@ describe('ProjectileService', () => {
     const player = new Player({ position: { x: 100, y: 100 } });
     const projectiles: Projectile[] = [];
 
-    service.update(projectiles, player, [], input({ shoot: true }), 1 / 60, 1000);
+    service.update(
+      projectiles,
+      player,
+      [],
+      input({ shoot: true }),
+      1 / 60,
+      1000,
+    );
     expect(projectiles).toHaveLength(1);
     expect(projectiles[0].velocity.x).toBe(PROJECTILE_SPEED);
 
@@ -65,8 +72,22 @@ describe('ProjectileService', () => {
     const player = new Player({ position: { x: 100, y: 100 } });
     const projectiles: Projectile[] = [];
 
-    service.update(projectiles, player, [], input({ left: true }), 1 / 60, 1000);
-    service.update(projectiles, player, [], input({ shoot: true }), 1 / 60, 1000);
+    service.update(
+      projectiles,
+      player,
+      [],
+      input({ left: true }),
+      1 / 60,
+      1000,
+    );
+    service.update(
+      projectiles,
+      player,
+      [],
+      input({ shoot: true }),
+      1 / 60,
+      1000,
+    );
     expect(projectiles[0].velocity.x).toBe(-PROJECTILE_SPEED);
 
     service.update(
@@ -100,7 +121,14 @@ describe('ProjectileService', () => {
 
     const projectiles = [projectile];
     const enemies = [enemy];
-    const events = service.update(projectiles, player, enemies, input(), 0, 1000);
+    const events = service.update(
+      projectiles,
+      player,
+      enemies,
+      input(),
+      0,
+      1000,
+    );
 
     expect(enemy.health).toBe(100 - PROJECTILE_DAMAGE);
     expect(projectiles).toHaveLength(0);
