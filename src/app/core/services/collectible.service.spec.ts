@@ -26,7 +26,10 @@ describe('CollectibleService', () => {
   describe('checkPickups', () => {
     it('coin pickup: adds score, marks collected, and returns a floater', () => {
       const player = new Player({ position: { x: 100, y: 100 } });
-      const coin = new Collectible({ type: 'coin', position: { x: 100, y: 100 } });
+      const coin = new Collectible({
+        type: 'coin',
+        position: { x: 100, y: 100 },
+      });
 
       const events = service.checkPickups(player, [coin], 1 / 60);
 
@@ -74,7 +77,10 @@ describe('CollectibleService', () => {
 
     it('does not re-collect an already-collected item', () => {
       const player = new Player({ position: { x: 100, y: 100 } });
-      const coin = new Collectible({ type: 'coin', position: { x: 100, y: 100 } });
+      const coin = new Collectible({
+        type: 'coin',
+        position: { x: 100, y: 100 },
+      });
       coin.collected = true;
       coin.fade = 0;
 
@@ -86,7 +92,10 @@ describe('CollectibleService', () => {
 
     it('ignores collectibles the player is not overlapping', () => {
       const player = new Player({ position: { x: 0, y: 0 } });
-      const coin = new Collectible({ type: 'coin', position: { x: 900, y: 900 } });
+      const coin = new Collectible({
+        type: 'coin',
+        position: { x: 900, y: 900 },
+      });
 
       const events = service.checkPickups(player, [coin], 1 / 60);
 
@@ -97,7 +106,10 @@ describe('CollectibleService', () => {
 
     it('ticks down the fade timer for a collected item and clamps at 0', () => {
       const player = new Player({ position: { x: 100, y: 100 } });
-      const coin = new Collectible({ type: 'coin', position: { x: 900, y: 900 } });
+      const coin = new Collectible({
+        type: 'coin',
+        position: { x: 900, y: 900 },
+      });
       coin.collected = true;
       coin.fade = 0.05;
 
