@@ -44,11 +44,7 @@ describe('CombatService', () => {
     it('stomp: damages the enemy, bounces the player, and does not kill it below its max health', () => {
       const { player, enemy } = makeStompScenario();
 
-      const events = service.handlePlayerEnemyCollision(
-        player,
-        [enemy],
-        1000,
-      );
+      const events = service.handlePlayerEnemyCollision(player, [enemy], 1000);
 
       expect(enemy.health).toBe(100 - PLAYER_DAMAGE_AGAINST_PUNK);
       expect(enemy.alive).toBe(true);
@@ -79,11 +75,7 @@ describe('CombatService', () => {
       const { player, enemy } = makeSideHitScenario();
       const startHealth = player.health;
 
-      const events = service.handlePlayerEnemyCollision(
-        player,
-        [enemy],
-        1000,
-      );
+      const events = service.handlePlayerEnemyCollision(player, [enemy], 1000);
 
       expect(player.health).toBe(startHealth - ENEMY_DAMAGE_PUNK);
       expect(player.velocity.x).toBeLessThan(0); // knocked back to the left (away from enemy)
@@ -98,11 +90,7 @@ describe('CombatService', () => {
       player.invulnUntilMs = 2000; // still active at nowMs=1000
       const startHealth = player.health;
 
-      const events = service.handlePlayerEnemyCollision(
-        player,
-        [enemy],
-        1000,
-      );
+      const events = service.handlePlayerEnemyCollision(player, [enemy], 1000);
 
       expect(player.health).toBe(startHealth);
       expect(events).toEqual([]);
