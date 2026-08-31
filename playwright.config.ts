@@ -21,7 +21,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:4200',
+    baseURL: 'http://127.0.0.1:4200',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Screenshot on failure */
@@ -52,8 +52,11 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:4200',
+    // --host 127.0.0.1: `ng serve`'s default `localhost` binding resolves
+    // IPv6-only on some machines, which makes Chromium's navigation to it
+    // intermittently time out under Playwright. Binding explicitly avoids that.
+    command: 'npm run start -- --host 127.0.0.1',
+    url: 'http://127.0.0.1:4200',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
