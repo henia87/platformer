@@ -9,15 +9,11 @@ import {
   PLAYER_JUMP,
   PLAYER_ACCELERATION,
   WORLD_WIDTH,
-  PICKUP_FADE_TIME,
   LABEL_TTL_SEC,
-  SMALL_BEER_HP,
-  BIG_BEER_HP,
-  PLAYER_MAX_HEALTH,
-  COIN_VALUE,
 } from './core/game.config';
 import { AssetLoaderService } from './core/services/asset-loader.service';
 import { CameraService } from './core/services/camera.service';
+import { CollectibleService } from './core/services/collectible.service';
 import { CollisionService } from './core/services/collision.service';
 import { CombatService } from './core/services/combat.service';
 import { GameLoopService } from './core/services/game-loop.service';
@@ -57,6 +53,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private combatService = inject(CombatService);
   private projectileService = inject(ProjectileService);
   private cameraService = inject(CameraService);
+  private collectibleService = inject(CollectibleService);
   private parallaxLayersService = inject(ParallaxLayersService);
   private gameStateService = inject(GameStateService);
 
@@ -303,45 +300,13 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
 
-      // --- Collectible pickup ---
-      for (const c of this.collectibles) {
-        if (c.collected) continue;
-        const hit = this.collisionService.checkAABBCollision(
-          {
-            position: this.player.position,
-            size: { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
-          },
-          { position: c.position, size: { width: c.width, height: c.height } },
-        );
-        if (hit) {
-          c.collected = true;
-          c.fade = PICKUP_FADE_TIME;
-
-          const label =
-            c.type === 'coin'
-              ? `+${COIN_VALUE}`
-              : c.beerVariant === 'small'
-                ? `+${SMALL_BEER_HP} HP`
-                : `+${BIG_BEER_HP} HP`;
-
-          this.gameStateService.spawnFloater(
-            c.position.x,
-            c.position.y - 4,
-            label,
-          );
-
-          if (c.type === 'coin') {
-            this.player.score += COIN_VALUE;
-          } else {
-            const heal =
-              c.beerVariant === 'small' ? SMALL_BEER_HP : BIG_BEER_HP;
-            this.player.health = Math.min(
-              PLAYER_MAX_HEALTH,
-              this.player.health + heal,
-            );
-          }
-          // TODO: SFX/particles
-        }
+      // --- Collectible pickups + fade-out timer ---
+      for (const ev of this.collectibleService.checkPickups(
+        this.player,
+        this.collectibles,
+        deltaTime,
+      )) {
+        this.gameStateService.spawnFloater(ev.x, ev.y, ev.text);
       }
 
       // --- Weapon: facing, firing, movement, and projectile-vs-enemy hits ---
@@ -363,14 +328,6 @@ export class AppComponent implements OnInit, OnDestroy {
         nowMs,
       )) {
         this.gameStateService.spawnFloater(ev.x, ev.y, ev.text);
-      }
-
-      // Fade-out timer for collected items
-      for (const c of this.collectibles) {
-        if (c.collected && c.fade > 0) {
-          c.fade -= deltaTime;
-          if (c.fade < 0) c.fade = 0;
-        }
       }
 
       this.gameStateService.pruneFloaters(nowMs, LABEL_TTL_SEC * 1000);
