@@ -16,6 +16,7 @@ import { CameraService } from './core/services/camera.service';
 import { CollectibleService } from './core/services/collectible.service';
 import { CollisionService } from './core/services/collision.service';
 import { CombatService } from './core/services/combat.service';
+import { EnemyService } from './core/services/enemy.service';
 import { GameLoopService } from './core/services/game-loop.service';
 import { InputService } from './core/services/input.service';
 import { ParallaxLayersService } from './core/services/parallax-layers.service';
@@ -54,6 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private projectileService = inject(ProjectileService);
   private cameraService = inject(CameraService);
   private collectibleService = inject(CollectibleService);
+  private enemyService = inject(EnemyService);
   private parallaxLayersService = inject(ParallaxLayersService);
   private gameStateService = inject(GameStateService);
 
@@ -285,20 +287,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.player.grounded = true;
       }
 
-      // --- Enemy patrol (minimal) ---
-      for (const e of this.enemies) {
-        if (e.patrolMaxX > e.patrolMinX) {
-          e.position.x += e.speed * e.dir * deltaTime;
-          if (e.position.x < e.patrolMinX) {
-            e.position.x = e.patrolMinX;
-            e.dir = 1;
-          }
-          if (e.position.x > e.patrolMaxX) {
-            e.position.x = e.patrolMaxX;
-            e.dir = -1;
-          }
-        }
-      }
+      // --- Enemy patrol ---
+      this.enemyService.updateEnemies(this.enemies, deltaTime);
 
       // --- Collectible pickups + fade-out timer ---
       for (const ev of this.collectibleService.checkPickups(
