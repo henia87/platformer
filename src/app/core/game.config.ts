@@ -1,21 +1,3 @@
-// Canvas
-export function getCanvasWidth(): number {
-  if (typeof window !== 'undefined' && typeof window.innerWidth === 'number') {
-    return Math.min(window.innerWidth, 800);
-  }
-  return 800;
-}
-
-export function getCanvasHeight(): number {
-  if (typeof window !== 'undefined' && typeof window.innerHeight === 'number') {
-    return Math.min(window.innerHeight, 600);
-  }
-  return 600;
-}
-
-export const CANVAS_WIDTH = getCanvasWidth();
-export const CANVAS_HEIGHT = getCanvasHeight();
-
 // Player
 export const PLAYER_WIDTH = 40;
 export const PLAYER_HEIGHT = 45;
@@ -79,7 +61,6 @@ export const FRICTION_MIN = 0.5; // Initial friction value after grace period
 // Platform
 export const PLATFORM_WIDTH = 200;
 export const PLATFORM_HEIGHT = 20;
-export const PLATFORM_Y = CANVAS_HEIGHT - 100;
 
 // Colors
 export const PLATFORM_COLOR = 'gray';

@@ -21,8 +21,6 @@ import {
 import { Subscription } from 'rxjs';
 
 import {
-  CANVAS_WIDTH,
-  CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
   PARALLAX_SMOOTH,
@@ -39,6 +37,7 @@ import { Platform } from '../../../core/models/platform.model';
 import { AssetLoaderService } from '../../../core/services/asset-loader.service';
 import { GameLoopService } from '../../../core/services/game-loop.service';
 import { RendererService } from '../../../core/services/renderer.service';
+import { ViewportService } from '../../../core/services/viewport.service';
 import { Vector2 } from '../../../core/utils/vector2';
 import { GameStateService } from '../../../state/game-state.service';
 @Component({
@@ -111,13 +110,14 @@ export class GameCanvasComponent implements AfterViewInit, OnDestroy {
    */
   private frameSub?: Subscription;
 
-  canvasWidth = CANVAS_WIDTH;
-  canvasHeight = CANVAS_HEIGHT;
-
   private gameLoop = inject(GameLoopService);
   private assetLoaderService = inject(AssetLoaderService);
   private rendererService = inject(RendererService);
+  private viewportService = inject(ViewportService);
   private gameStateService = inject(GameStateService);
+
+  canvasWidth = this.viewportService.getCanvasWidth();
+  canvasHeight = this.viewportService.getCanvasHeight();
 
   /**
    * Fixed delta time for physics updates (ms).
@@ -165,8 +165,8 @@ export class GameCanvasComponent implements AfterViewInit, OnDestroy {
     this.ctx = ctx;
 
     // Logical size
-    const w = CANVAS_WIDTH;
-    const h = CANVAS_HEIGHT;
+    const w = this.canvasWidth;
+    const h = this.canvasHeight;
 
     // Physical size (matching device pixels)
     const ratio = window.devicePixelRatio || 1;

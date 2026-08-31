@@ -1,14 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 
 import { LevelService } from './level.service';
-import { CANVAS_HEIGHT, ENEMY_HEIGHT } from '../core/game.config';
+import { ENEMY_HEIGHT } from '../core/game.config';
+import { ViewportService } from '../core/services/viewport.service';
 
 describe('LevelService', () => {
   let service: LevelService;
+  let viewportService: ViewportService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
     service = TestBed.inject(LevelService);
+    viewportService = TestBed.inject(ViewportService);
   });
 
   it('should be created', () => {
@@ -30,7 +33,10 @@ describe('LevelService', () => {
       expect(level.enemies[0]).toEqual(
         expect.objectContaining({
           type: 'punk',
-          position: { x: 400, y: CANVAS_HEIGHT - ENEMY_HEIGHT },
+          position: {
+            x: 400,
+            y: viewportService.getCanvasHeight() - ENEMY_HEIGHT,
+          },
         }),
       );
     });
