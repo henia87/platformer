@@ -187,13 +187,48 @@ export function getPlatformRegion(canvasWidth: number, canvasHeight: number) {
 }
 
 /**
- * Get the background area region for testing
+ * Snapshot of raw canvas pixel data (RGBA), for comparing two points in time.
+ * Unlike a screenshot() buffer (PNG-compressed, not directly comparable),
+ * this gives byte-for-byte pixel values so we can measure how MUCH changed.
  */
-export function getBackgroundRegion(canvasWidth: number, canvasHeight: number) {
-  return {
-    x: 0,
-    y: 0,
-    w: canvasWidth,
-    h: canvasHeight / 3,
-  };
+export async function getCanvasPixels(
+  page: Page,
+  region?: { x: number; y: number; w: number; h: number },
+): Promise<number[]> {
+  return page.evaluate((r) => {
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return [];
+
+    const x = r?.x ?? 0;
+    const y = r?.y ?? 0;
+    const w = r?.w ?? canvas.width;
+    const h = r?.h ?? canvas.height;
+
+    return Array.from(ctx.getImageData(x, y, w, h).data);
+  }, region);
+}
+
+/**
+ * Counts pixels that changed between two getCanvasPixels() snapshots of the
+ * same region. The game loop keeps enemies patrolling and floaters animating
+ * even with no input, so a plain "did anything change" check always passes -
+ * this gives a magnitude to compare against that idle drift.
+ */
+export function countDifferingPixels(
+  before: number[],
+  after: number[],
+): number {
+  let count = 0;
+  for (let i = 0; i < before.length; i += 4) {
+    if (
+      before[i] !== after[i] ||
+      before[i + 1] !== after[i + 1] ||
+      before[i + 2] !== after[i + 2] ||
+      before[i + 3] !== after[i + 3]
+    ) {
+      count++;
+    }
+  }
+  return count;
 }
