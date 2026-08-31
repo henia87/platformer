@@ -1,14 +1,14 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import {
   PLATFORM_WIDTH,
   PLATFORM_HEIGHT,
   ENEMY_HEIGHT,
-  CANVAS_HEIGHT,
 } from '../core/game.config';
 import { Collectible } from '../core/models/collectible.model';
 import { Enemy } from '../core/models/enemy.model';
 import { Platform } from '../core/models/platform.model';
+import { ViewportService } from '../core/services/viewport.service';
 
 /** The entities that make up a level's initial layout. */
 export interface LevelData {
@@ -25,11 +25,15 @@ export interface LevelData {
  */
 @Injectable({ providedIn: 'root' })
 export class LevelService {
+  private viewportService = inject(ViewportService);
+
   /** Builds the entity layout for the given level. Only level 1 exists today. */
   loadLevel(levelId: number): LevelData {
     if (levelId !== 1) {
       throw new Error(`LevelService: no level data for levelId ${levelId}`);
     }
+
+    const canvasHeight = this.viewportService.getCanvasHeight();
 
     return {
       platforms: [
@@ -70,7 +74,7 @@ export class LevelService {
       ],
       enemies: [
         new Enemy({
-          position: { x: 400, y: CANVAS_HEIGHT - ENEMY_HEIGHT },
+          position: { x: 400, y: canvasHeight - ENEMY_HEIGHT },
           type: 'punk',
           damage: 15,
           patrolMinX: 350,
@@ -79,7 +83,7 @@ export class LevelService {
           dir: 1,
         }),
         new Enemy({
-          position: { x: 600, y: CANVAS_HEIGHT - ENEMY_HEIGHT },
+          position: { x: 600, y: canvasHeight - ENEMY_HEIGHT },
           type: 'homeless',
           damage: 10,
           patrolMinX: 550,

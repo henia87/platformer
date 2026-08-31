@@ -1,12 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
-import { getCanvasWidth, WORLD_WIDTH } from '../game.config';
+import { WORLD_WIDTH } from '../game.config';
+import { ViewportService } from './viewport.service';
 import { Vector2 } from '../utils/vector2';
 
 @Injectable({ providedIn: 'root' })
 export class CameraService {
+  private viewportService = inject(ViewportService);
+
   private worldWidth = WORLD_WIDTH;
-  private viewportWidth = getCanvasWidth();
+  private viewportWidth = this.viewportService.getCanvasWidth();
   private x = 0;
 
   // Dead-zone: keep player within center ± margin

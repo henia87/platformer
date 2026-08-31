@@ -2,8 +2,6 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import {
-  CANVAS_WIDTH,
-  CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
   PLAYER_JUMP,
@@ -22,6 +20,7 @@ import { InputService } from './core/services/input.service';
 import { ParallaxLayersService } from './core/services/parallax-layers.service';
 import { PhysicsService } from './core/services/physics.service';
 import { ProjectileService } from './core/services/projectile.service';
+import { ViewportService } from './core/services/viewport.service';
 import { GameStateService } from './state/game-state.service';
 
 /**
@@ -34,7 +33,6 @@ import { GameStateService } from './state/game-state.service';
  * - platform: The main platform object (position, size).
  * - snapshot/snapshotPrev: State snapshots for smooth rendering.
  * - layers: Parallax background layers.
- * - canvasWidth/canvasHeight: Canvas dimensions.
  * - cameraX: Current camera X position.
  *
  * The component subscribes to input and game loop events, updates the game state and manages asset loading.
@@ -57,7 +55,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private collectibleService = inject(CollectibleService);
   private enemyService = inject(EnemyService);
   private parallaxLayersService = inject(ParallaxLayersService);
+  private viewportService = inject(ViewportService);
   private gameStateService = inject(GameStateService);
+
+  /** Canvas height, computed once at construction (matches the previous module-load timing). */
+  private canvasHeight = this.viewportService.getCanvasHeight();
 
   private inputSnapshot = {
     left: false,
@@ -96,9 +98,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private jumpBuffer = 0;
   /** Maximum jump buffer time allowed (seconds). */
   private readonly JUMP_BUFFER_MAX = 0.12;
-
-  canvasWidth = CANVAS_WIDTH;
-  canvasHeight = CANVAS_HEIGHT;
 
   /** Current camera X position. */
   cameraX = 0;
@@ -178,7 +177,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     /** First-frame player placement */
     this.player.position.x = 0;
-    this.player.position.y = CANVAS_HEIGHT - PLAYER_HEIGHT - 5;
+    this.player.position.y = this.canvasHeight - PLAYER_HEIGHT - 5;
     this.player.grounded = true;
 
     /** Initial camera and snapshot */
@@ -280,7 +279,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.player.position.y = 0;
         this.player.velocity.y = 0;
       }
-      const maxY = CANVAS_HEIGHT - PLAYER_HEIGHT - 5;
+      const maxY = this.canvasHeight - PLAYER_HEIGHT - 5;
       if (this.player.position.y > maxY) {
         this.player.position.y = maxY;
         this.player.velocity.y = 0;
